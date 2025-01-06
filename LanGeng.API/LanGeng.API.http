@@ -1,6 +1,29 @@
-@LanGengAPI_HostAddress = http://localhost:5041
+@LanGengAPI_HostAddress = http://localhost:5041/api
+@Username = haven
 
-GET {{LanGengAPI_HostAddress}}/weatherforecast/
+### Register new user
+POST {{LanGengAPI_HostAddress}}/user/
 Accept: application/json
 
-###
+{
+    "fullname": "",
+    "email": "",
+    "password": ""
+}
+
+### User login
+POST {{LanGengAPI_HostAddress}}/user/
+Accept: application/json
+
+{
+    "username": "",
+    "password": ""
+}
+
+### Get profile
+GET {{LanGengAPI_HostAddress}}/user/profile/{{Username}}
+Accept: application/json
+
+### Get posts
+GET {{LanGengAPI_HostAddress}}/post/?page=6&limit=20
+Accept: application/json
