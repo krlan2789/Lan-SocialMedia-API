@@ -34,7 +34,7 @@ ASP.NET Project - Social Media REST API
 |     | CreatedAt    | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
 |     | UpdatedAt    | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
 
-### 1.2.4. Table UserProfiles
+### 1.2.2. Table UserProfiles
 
 |     | Name         | Type     |                                    |
 | --- | ------------ | -------- | ---------------------------------- |
@@ -58,7 +58,7 @@ ASP.NET Project - Social Media REST API
 | FK  | **UserId**    | int      |                                                       |
 |     | CreatedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss'                     |
 
-### 1.2.3. Table UserTokens
+### 1.2.4. Table UserTokens
 
 |     | Name        | Type     |                                   |
 | --- | ----------- | -------- | --------------------------------- |
@@ -69,7 +69,7 @@ ASP.NET Project - Social Media REST API
 | FK  | **UserId**  | int      |                                   |
 |     | CreatedAt   | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
 
-### 1.2.2. Table UserVerifications
+### 1.2.5. Table UserVerifications
 
 |     | Name             | Type     |                                             |
 | --- | ---------------- | -------- | ------------------------------------------- |
@@ -84,7 +84,7 @@ ASP.NET Project - Social Media REST API
 | FK  | **UserId**       | int      |                                             |
 |     | CreatedAt        | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss'           |
 
-### 1.2.5. Table UserSessionLogs
+### 1.2.6. Table UserSessionLogs
 
 |     | Name       | Type     |                                   |
 | --- | ---------- | -------- | --------------------------------- |
@@ -95,7 +95,7 @@ ASP.NET Project - Social Media REST API
 | FK  | **UserId** | int      | nullable                          |
 |     | CreatedAt  | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
 
-### 1.2.6. Table Groups
+### 1.2.7. Table Groups
 
 |     | Name          | Type     |                                   |
 | --- | ------------- | -------- | --------------------------------- |
@@ -108,7 +108,7 @@ ASP.NET Project - Social Media REST API
 |     | CreatedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
 |     | UpdatedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
 
-### 1.2.7. Table GroupMembers
+### 1.2.8. Table GroupMembers
 
 |     | Name         | Type     |                                                 |
 | --- | ------------ | -------- | ----------------------------------------------- |
@@ -119,7 +119,7 @@ ASP.NET Project - Social Media REST API
 |     | CreatedAt    | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss'               |
 |     | UpdatedAt    | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss'               |
 
-### 1.2.8. Table UserPosts
+### 1.2.9. Table UserPosts
 
 |     | Name                | Type     |                                   |
 | --- | ------------------- | -------- | --------------------------------- |
@@ -133,7 +133,24 @@ ASP.NET Project - Social Media REST API
 |     | CreatedAt           | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
 |     | UpdatedAt           | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
 
-### 1.2.9. Table PostComments
+### 1.2.10. Table Hashtags
+
+|     | Name      | Type     |                                   |
+| --- | --------- | -------- | --------------------------------- |
+| PK  | **Id**    | int      | Auto-increament                   |
+|     | Tag       | string   | Length(64), unique                |
+|     | CreatedAt | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
+
+### 1.2.11. Table PostHashtags
+
+|     | Name          | Type     |                                   |
+| --- | ------------- | -------- | --------------------------------- |
+| PK  | **Id**        | int      | Auto-increament                   |
+| FK  | **PostId**    | int      |                                   |
+| FK  | **HashtagId** | int      |                                   |
+|     | CreatedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
+
+### 1.2.12. Table PostComments
 
 |     | Name          | Type     |                                   |
 | --- | ------------- | -------- | --------------------------------- |
@@ -145,7 +162,7 @@ ASP.NET Project - Social Media REST API
 |     | CreatedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
 |     | UpdatedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
 
-### 1.2.10. Table PostReactions
+### 1.2.13. Table PostReactions
 
 |     | Name       | Type     |                                   |
 | --- | ---------- | -------- | --------------------------------- |
@@ -156,7 +173,7 @@ ASP.NET Project - Social Media REST API
 |     | CreatedAt  | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
 |     | UpdatedAt  | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
 
-### 1.2.10. Table CommentReactions
+### 1.2.14. Table CommentReactions
 
 |     | Name          | Type     |                                   |
 | --- | ------------- | -------- | --------------------------------- |
@@ -167,7 +184,7 @@ ASP.NET Project - Social Media REST API
 |     | CreatedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
 |     | UpdatedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
 
-### 1.2.10. Table PostReactions
+### 1.2.15. Table PostReactions
 
 |     | Name       | Type     |                                   |
 | --- | ---------- | -------- | --------------------------------- |
@@ -178,7 +195,7 @@ ASP.NET Project - Social Media REST API
 |     | CreatedAt  | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
 |     | UpdatedAt  | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
 
-### 1.2.11. Table UserEvents
+### 1.2.16. Table UserEvents
 
 |     | Name          | Type     |                                   |
 | --- | ------------- | -------- | --------------------------------- |

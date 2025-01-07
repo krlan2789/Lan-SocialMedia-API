@@ -17,10 +17,5 @@ public class UserToken
     public User? User { get; set; }
 
     public DateTime ExpiresDate { get; set; }
-    public DateTime CreatedAt { get; set; }
-
-    public UserToken()
-    {
-        CreatedAt = DateTime.Now;
-    }
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
 }

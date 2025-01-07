@@ -1,29 +1,55 @@
-@LanGengAPI_HostAddress = http://localhost:5041/api
-@Username = haven
+@HostAddress = http://localhost:5041/api
+@UsernameValid = bella
+@PasswordValid = 12345678
+@TokenValid = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiZWxsYSIsImp0aSI6IjhkMDgyZDRkLTYyM2EtNDM4ZC05MzhiLTIwOWM3ZmI2ODdhMiIsImV4cCI6MTczODg0NTYzMCwiaXNzIjoiaHR0cHM6Ly9sb2NhbGhvc3Q6NTA0MSIsImF1ZCI6Imh0dHBzOi8vbG9jYWxob3N0OjUwNDEifQ.vVk_f0QX3cFk6OGYrYeVb9PaWnsi1MtaYB3k5G5s_KQ
 
 ### Register new user
-POST {{LanGengAPI_HostAddress}}/user/
+# Register
+POST {{HostAddress}}/auth/register
 Accept: application/json
+Content-Type: application/json
 
 {
     "fullname": "",
     "email": "",
-    "password": ""
+    "password": "{{PasswordValid}}"
 }
 
 ### User login
-POST {{LanGengAPI_HostAddress}}/user/
+# Login
+POST {{HostAddress}}/auth/login
 Accept: application/json
+Content-Type: application/json
 
 {
-    "username": "",
-    "password": ""
+    "username": "{{UsernameValid}}",
+    "password": "{{PasswordValid}}"
 }
 
+### Get authorized profile
+# AuthProfile
+GET {{HostAddress}}/user/profile
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{TokenValid}}
+
 ### Get profile
-GET {{LanGengAPI_HostAddress}}/user/profile/{{Username}}
+# UserProfile
+GET {{HostAddress}}/user/profile/{{UsernameValid}}
 Accept: application/json
 
 ### Get posts
-GET {{LanGengAPI_HostAddress}}/post/?page=6&limit=20
+# GetPosts
+GET {{HostAddress}}/post/?limit=8&author=bella
 Accept: application/json
+
+### Create posts
+# CreatePost
+POST {{HostAddress}}/post
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{TokenValid}}
+
+{
+    "Content": "This my other post.\n\n#newpost #test #tester"
+}

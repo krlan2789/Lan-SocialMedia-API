@@ -22,15 +22,8 @@ public class PostComment
     public int? ReplyId { get; set; }
     public PostComment? Reply { get; set; }
 
-    public ICollection<CommentReaction> Reactions { get; set; }
+    public ICollection<CommentReaction> Reactions { get; set; } = [];
 
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
-
-    public PostComment()
-    {
-        CreatedAt = DateTime.Now;
-        UpdatedAt = DateTime.Now;
-        Reactions = [];
-    }
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public DateTime UpdatedAt { get; set; } = DateTime.Now;
 }

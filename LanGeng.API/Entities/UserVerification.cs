@@ -12,7 +12,7 @@ public class UserVerification
     public required VerificationTypeEnum VerificationType { get; set; }
 
     [Required, MaxLength(6)]
-    public string Code { get; set; }
+    public string Code { get; set; } = $"{new Random().Next(111, 999999):000000}";
 
     [MaxLength(32)]
     public string? PhoneNumber { get; set; }
@@ -24,14 +24,7 @@ public class UserVerification
     public int UserId { get; set; }
     public User? User { get; set; }
 
-    public DateTime ExpiresDate { get; set; }
+    public DateTime ExpiresDate { get; set; } = DateTime.Now.AddMinutes(8);
     public DateTime? VerifiedAt { get; set; }
-    public DateTime CreatedAt { get; set; }
-
-    public UserVerification()
-    {
-        Code = $"{new Random().Next(111, 999999):000000}";
-        ExpiresDate = DateTime.Now.AddMinutes(8);
-        CreatedAt = DateTime.Now;
-    }
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
 }

@@ -19,12 +19,6 @@ public class PostReaction
     public int PostId { get; set; }
     public UserPost? Post { get; set; }
 
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
-
-    public PostReaction()
-    {
-        CreatedAt = DateTime.Now;
-        UpdatedAt = DateTime.Now;
-    }
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public DateTime UpdatedAt { get; set; } = DateTime.Now;
 }

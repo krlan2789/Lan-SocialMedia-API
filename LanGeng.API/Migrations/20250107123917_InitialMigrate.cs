@@ -12,6 +12,20 @@ namespace LanGeng.API.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
+                name: "Hashtags",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Tag = table.Column<string>(type: "nvarchar(64)", maxLength: 64, nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Hashtags", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Users",
                 columns: table => new
                 {
@@ -271,6 +285,31 @@ namespace LanGeng.API.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "PostHashtags",
+                columns: table => new
+                {
+                    PostId = table.Column<int>(type: "int", nullable: false),
+                    HashtagId = table.Column<int>(type: "int", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PostHashtags", x => new { x.PostId, x.HashtagId });
+                    table.ForeignKey(
+                        name: "FK_PostHashtags_Hashtags_HashtagId",
+                        column: x => x.HashtagId,
+                        principalTable: "Hashtags",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_PostHashtags_UserPosts_PostId",
+                        column: x => x.PostId,
+                        principalTable: "UserPosts",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "PostReactions",
                 columns: table => new
                 {
@@ -394,6 +433,12 @@ namespace LanGeng.API.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_Hashtags_Tag",
+                table: "Hashtags",
+                column: "Tag",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_PostComments_PostId",
                 table: "PostComments",
                 column: "PostId");
@@ -407,6 +452,11 @@ namespace LanGeng.API.Migrations
                 name: "IX_PostComments_UserId",
                 table: "PostComments",
                 column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PostHashtags_HashtagId",
+                table: "PostHashtags",
+                column: "HashtagId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_PostReactions_PostId",
@@ -520,6 +570,9 @@ namespace LanGeng.API.Migrations
                 name: "GroupMembers");
 
             migrationBuilder.DropTable(
+                name: "PostHashtags");
+
+            migrationBuilder.DropTable(
                 name: "PostReactions");
 
             migrationBuilder.DropTable(
@@ -542,6 +595,9 @@ namespace LanGeng.API.Migrations
 
             migrationBuilder.DropTable(
                 name: "PostComments");
+
+            migrationBuilder.DropTable(
+                name: "Hashtags");
 
             migrationBuilder.DropTable(
                 name: "UserPosts");

@@ -15,6 +15,8 @@ public class SocialMediaDatabaseContext(DbContextOptions<SocialMediaDatabaseCont
     public DbSet<Group> Groups => Set<Group>();
     public DbSet<GroupMember> GroupMembers => Set<GroupMember>();
     public DbSet<UserPost> UserPosts => Set<UserPost>();
+    public DbSet<Hashtag> Hashtags => Set<Hashtag>();
+    public DbSet<PostHashtag> PostHashtags => Set<PostHashtag>();
     public DbSet<PostComment> PostComments => Set<PostComment>();
     public DbSet<CommentReaction> CommentReactions => Set<CommentReaction>();
     public DbSet<PostReaction> PostReactions => Set<PostReaction>();
@@ -85,6 +87,30 @@ public class SocialMediaDatabaseContext(DbContextOptions<SocialMediaDatabaseCont
             entity.HasOne(e => e.Group).WithMany().HasForeignKey(r => r.GroupId);
             entity.HasMany(e => e.Comments).WithOne(r => r.Post).HasForeignKey(r => r.PostId);
             entity.HasMany(e => e.Reactions).WithOne(r => r.Post).HasForeignKey(r => r.PostId);
+            entity.HasMany(e => e.PostHashtags).WithOne(e => e.Post).HasForeignKey(r => r.PostId);
+            entity.HasMany(e => e.Hashtags).WithMany(e => e.Posts).UsingEntity<PostHashtag>(
+            // l => l.HasOne<Hashtag>().WithMany().HasForeignKey(e => e.HashtagId),
+            // r => r.HasOne<UserPost>().WithMany().HasForeignKey(e => e.PostId)
+            );
+        });
+
+        // Hashtags Table
+        modelBuilder.Entity<Hashtag>(entity =>
+        {
+            entity.HasIndex(e => e.Tag).IsUnique();
+            entity.HasMany(e => e.PostHashtags).WithOne(e => e.Hashtag).HasForeignKey(r => r.HashtagId);
+            // entity.HasMany(e => e.Posts).WithMany(e => e.Hashtags).UsingEntity<PostHashtag>(
+            //     l => l.HasOne<UserPost>().WithMany().HasForeignKey(e => e.PostId),
+            //     r => r.HasOne<Hashtag>().WithMany().HasForeignKey(e => e.HashtagId)
+            // );
+        });
+
+        // PostHashtags Table
+        modelBuilder.Entity<PostHashtag>(entity =>
+        {
+            entity.HasKey(e => new { e.PostId, e.HashtagId });
+            entity.HasOne(e => e.Hashtag).WithMany(r => r.PostHashtags).HasForeignKey(r => r.HashtagId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Post).WithMany(r => r.PostHashtags).HasForeignKey(r => r.PostId).OnDelete(DeleteBehavior.Restrict);
         });
 
         // PostComments Table

@@ -26,7 +26,9 @@ public class UserPostSeeder
                 var postCount = Faker.RandomNumber.Next(0, 40) % 5;
                 var posts = Enumerable.Range(0, postCount).Select(x =>
                 {
+                    var hashtagCount = Faker.RandomNumber.Next(0, 40) % 8;
                     var content = Faker.Lorem.Sentence(Faker.RandomNumber.Next(1, 32));
+                    // var hashtags = Enumerable.Range(0, hashtagCount).Select(w => "#" + Faker.Company.Name().Replace(" ", ""));
                     return new UserPost
                     {
                         AuthorId = user.Id,

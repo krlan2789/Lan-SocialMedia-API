@@ -1,0 +1,10 @@
+{
+    "configurations": [
+        {
+            "name": "C#: LanGeng.API [Default Configuration]",
+            "type": "dotnet",
+            "request": "launch",
+            "projectPath": "${workspaceFolder}\\LanGeng.API\\LanGeng.API.csproj"
+        }
+    ]
+}

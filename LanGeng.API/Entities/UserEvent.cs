@@ -37,12 +37,6 @@ public class UserEvent
     public int? GroupId { get; set; }
     public Group? Group { get; set; }
 
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
-
-    public UserEvent()
-    {
-        CreatedAt = DateTime.Now;
-        UpdatedAt = DateTime.Now;
-    }
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public DateTime UpdatedAt { get; set; } = DateTime.Now;
 }

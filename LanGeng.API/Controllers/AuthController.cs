@@ -34,7 +34,8 @@ namespace LanGeng.API.Controllers
                 User? currentUser = await dbContext.Users.Where(user => user.Username == dto.Username).FirstOrDefaultAsync();
                 if (currentUser != null && currentUser.VerifyPassword(dto.Password))
                 {
-                    var token = _tokenService.GenerateToken("" + currentUser.Id, TimeSpan.FromDays(30));
+                    var token = _tokenService.GenerateToken(currentUser.Username, TimeSpan.FromDays(30));
+                    await dbContext.UserTokens.Where(ut => ut.UserId == currentUser.Id).ExecuteDeleteAsync();
                     dbContext.UserTokens.Add(new UserToken
                     {
                         Token = token,
@@ -89,11 +90,12 @@ namespace LanGeng.API.Controllers
             {
                 // Save User if doesn't exist
                 if (await dbContext.Users.Where(user => user.Email == userDto.Email).AnyAsync()) return Results.Conflict();
-                dbContext.Users.Add(userDto.ToEntity());
+                var currentUser = userDto.ToEntity();
+                dbContext.Users.Add(currentUser);
                 await dbContext.SaveChangesAsync();
 
                 // Save User verification
-                User? currentUser = await dbContext.Users.Where(user => user.Email == userDto.Email).FirstAsync();
+                // User? currentUser = await dbContext.Users.Where(user => user.Email == userDto.Email).FirstAsync();
                 dbContext.UserVerifications.Add(new UserVerification
                 {
                     UserId = currentUser.Id,
@@ -143,13 +145,14 @@ namespace LanGeng.API.Controllers
                 bool status = userVerification.ExpiresDate > verifietAt;
                 if (!status) throw new Exception("Verification Code Expired");
                 dbContext.Entry(userVerification).CurrentValues.SetValues(new { VerifiedAt = verifietAt });
+                var result = await dbContext.SaveChangesAsync();
 
                 // Update User Account Status
                 UserStatus? userStatus = await dbContext.UserStatuses.Where(uv =>
                     uv.UserId == currentUser.Id
                 ).FirstAsync() ?? throw new Exception("Invalid Account Status");
                 dbContext.Entry(userStatus).CurrentValues.SetValues(new { AcconutStatus = AccountStatusEnum.Verified });
-                var result = await dbContext.SaveChangesAsync();
+                result = await dbContext.SaveChangesAsync();
 
                 return result > 0 ? throw new Exception("Verify Account Failed") : Results.Ok(
                     new ResponseData<ResponseUserDto>("Verified Account Successfully")

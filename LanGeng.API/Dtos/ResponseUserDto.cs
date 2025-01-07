@@ -4,11 +4,11 @@ public record class ResponseUserDto
 (
     string Fullname,
     string Email,
-    string? Username,
-    string? Bio,
-    string? ProfileImage
-// string? PhoneNumber,
-// string? CityBorn,
-// string? CityHome,
-// DateOnly? BirthDate
+    string? Username = null,
+    string? Bio = null,
+    string? ProfileImage = null
+// string? PhoneNumber = null,
+// string? CityBorn = null,
+// string? CityHome = null,
+// DateOnly? BirthDate = null
 );

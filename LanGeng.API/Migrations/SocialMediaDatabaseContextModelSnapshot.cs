@@ -127,6 +127,30 @@ namespace LanGeng.API.Migrations
                     b.ToTable("GroupMembers");
                 });
 
+            modelBuilder.Entity("LanGeng.API.Entities.Hashtag", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Tag")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Tag")
+                        .IsUnique();
+
+                    b.ToTable("Hashtags");
+                });
+
             modelBuilder.Entity("LanGeng.API.Entities.PostComment", b =>
                 {
                     b.Property<int>("Id")
@@ -163,6 +187,24 @@ namespace LanGeng.API.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("PostComments");
+                });
+
+            modelBuilder.Entity("LanGeng.API.Entities.PostHashtag", b =>
+                {
+                    b.Property<int>("PostId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("HashtagId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("PostId", "HashtagId");
+
+                    b.HasIndex("HashtagId");
+
+                    b.ToTable("PostHashtags");
                 });
 
             modelBuilder.Entity("LanGeng.API.Entities.PostReaction", b =>
@@ -609,6 +651,25 @@ namespace LanGeng.API.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("LanGeng.API.Entities.PostHashtag", b =>
+                {
+                    b.HasOne("LanGeng.API.Entities.Hashtag", "Hashtag")
+                        .WithMany("PostHashtags")
+                        .HasForeignKey("HashtagId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("LanGeng.API.Entities.UserPost", "Post")
+                        .WithMany("PostHashtags")
+                        .HasForeignKey("PostId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Hashtag");
+
+                    b.Navigation("Post");
+                });
+
             modelBuilder.Entity("LanGeng.API.Entities.PostReaction", b =>
                 {
                     b.HasOne("LanGeng.API.Entities.UserPost", "Post")
@@ -727,6 +788,11 @@ namespace LanGeng.API.Migrations
                     b.Navigation("Members");
                 });
 
+            modelBuilder.Entity("LanGeng.API.Entities.Hashtag", b =>
+                {
+                    b.Navigation("PostHashtags");
+                });
+
             modelBuilder.Entity("LanGeng.API.Entities.PostComment", b =>
                 {
                     b.Navigation("Reactions");
@@ -744,6 +810,8 @@ namespace LanGeng.API.Migrations
             modelBuilder.Entity("LanGeng.API.Entities.UserPost", b =>
                 {
                     b.Navigation("Comments");
+
+                    b.Navigation("PostHashtags");
 
                     b.Navigation("Reactions");
                 });

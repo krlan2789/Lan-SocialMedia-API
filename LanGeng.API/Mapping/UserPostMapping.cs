@@ -10,12 +10,12 @@ public static class UserPostMapping
         var post = new UserPost
         {
             Slug = Guid.NewGuid().ToString().Replace("-", "")[..16],
-            Content = dto.Content,
-            Media = dto.Media,
             AuthorId = authorId,
+            CommentAvailability = dto.CommentAvailability ?? true
         };
-        post.CommentAvailability = dto.CommentAvailability ?? true;
+        if (dto.Content != null) post.Content = dto.Content;
         if (dto.GroupId != null) post.GroupId = dto.GroupId;
+        if (dto.Media != null) post.Media = dto.Media;
         return post;
     }
 
@@ -34,6 +34,25 @@ public static class UserPostMapping
             post.Group?.Slug,
             post.Comments?.Count ?? 0,
             post.Reactions?.Count ?? 0,
+            post.CreatedAt,
+            post.UpdatedAt
+        );
+    }
+
+    public static UserPostFullDto ToFullDto(this UserPost post)
+    {
+        return new UserPostFullDto
+        (
+            post.Slug,
+            post.CommentAvailability,
+            post.Content,
+            post.Media?.ToArray(),
+            "" + post.Author?.Fullname,
+            "" + post.Author?.Username,
+            post.Group?.Name,
+            post.Group?.Slug,
+            post.Comments?.Select(c => c.ToDto()).ToArray() ?? [],
+            post.Reactions?.Select(r => r.ToDto()).ToArray() ?? [],
             post.CreatedAt,
             post.UpdatedAt
         );

@@ -57,9 +57,9 @@ public class TokenService
 
     public string GetUserIdFromToken(HttpContext httpContext)
     {
-        bool isAuthenticated = httpContext.User?.Identity?.IsAuthenticated == true;
+        // bool isAuthenticated = httpContext.User?.Identity?.IsAuthenticated == true;
         string token = "" + httpContext.Request.Headers["Authorization"].ToString().Split(" ")[1];
         var claim = GetPrincipalFromToken(token).Claims.First(claim => claim.Type == ClaimTypes.NameIdentifier).Value;
-        return claim == null || !isAuthenticated ? "" : claim;
+        return claim == null /*|| !isAuthenticated*/ ? "" : claim;
     }
 }

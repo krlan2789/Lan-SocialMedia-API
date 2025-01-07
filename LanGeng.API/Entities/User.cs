@@ -23,15 +23,8 @@ public class User
 
     public UserProfile? Profile { get; set; }
     public UserStatus? AccountStatus { get; set; }
-    public ICollection<UserToken> UserTokens { get; set; }
+    public ICollection<UserToken> UserTokens { get; set; } = [];
 
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
-
-    public User()
-    {
-        CreatedAt = DateTime.Now;
-        UpdatedAt = DateTime.Now;
-        UserTokens = [];
-    }
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public DateTime UpdatedAt { get; set; } = DateTime.Now;
 }

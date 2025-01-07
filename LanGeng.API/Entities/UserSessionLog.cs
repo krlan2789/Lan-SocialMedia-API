@@ -14,10 +14,5 @@ public class UserSessionLog
     public int? UserId { get; set; }
     public User? User { get; set; }
 
-    public DateTime CreatedAt { get; set; }
-
-    public UserSessionLog()
-    {
-        CreatedAt = DateTime.Now;
-    }
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
 }

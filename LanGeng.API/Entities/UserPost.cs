@@ -13,7 +13,7 @@ public class UserPost
     [Required, MaxLength(255)]
     public required string Slug { get; set; }
 
-    public bool CommentAvailability { get; set; }
+    public bool CommentAvailability { get; set; } = true;
     public string? Content { get; set; }
 
     [TypeConverter(typeof(string[]))]
@@ -26,18 +26,12 @@ public class UserPost
     public int? GroupId { get; set; }
     public Group? Group { get; set; }
 
-    public ICollection<PostComment> Comments { get; set; }
-    public ICollection<PostReaction> Reactions { get; set; }
+    public ICollection<PostComment> Comments { get; set; } = [];
+    public ICollection<PostReaction> Reactions { get; set; } = [];
 
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
+    public ICollection<PostHashtag> PostHashtags { get; set; } = [];
+    public ICollection<Hashtag> Hashtags { get; set; } = [];
 
-    public UserPost()
-    {
-        CommentAvailability = true;
-        CreatedAt = DateTime.Now;
-        UpdatedAt = DateTime.Now;
-        Comments = [];
-        Reactions = [];
-    }
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public DateTime UpdatedAt { get; set; } = DateTime.Now;
 }

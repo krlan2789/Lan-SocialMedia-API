@@ -20,12 +20,6 @@ public class CommentReaction
     public int CommentId { get; set; }
     public PostComment? Comment { get; set; }
 
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
-
-    public CommentReaction()
-    {
-        CreatedAt = DateTime.Now;
-        UpdatedAt = DateTime.Now;
-    }
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public DateTime UpdatedAt { get; set; } = DateTime.Now;
 }
