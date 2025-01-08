@@ -1,6 +1,9 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using LanGeng.API.Data;
+using LanGeng.API.Entities;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 namespace LanGeng.API.Services;
@@ -10,12 +13,17 @@ public class TokenService
     private readonly string _secretKey;
     private readonly string _issuer;
     private readonly string _audience;
+    private readonly ILogger<TokenService> _logger;
+    private readonly IServiceProvider _serviceProvider;
+    private SocialMediaDatabaseContext DbContext => _serviceProvider.CreateScope().ServiceProvider.GetRequiredService<SocialMediaDatabaseContext>();
 
-    public TokenService(string secretKey, string issuer, string audience)
+    public TokenService(IConfiguration configuration, ILogger<TokenService> logger, IServiceProvider serviceProvider)
     {
-        _secretKey = secretKey;
-        _issuer = issuer;
-        _audience = audience;
+        _secretKey = "" + configuration["Jwt:SecretKey"];
+        _issuer = "" + configuration["Jwt:Issuer"];
+        _audience = "" + configuration["Jwt:Audience"];
+        _logger = logger;
+        _serviceProvider = serviceProvider;
     }
 
     public string GenerateToken(string Username, TimeSpan expiration)
@@ -55,11 +63,48 @@ public class TokenService
         return tokenHandler.ValidateToken(token, validationParameters, out _);
     }
 
-    public string GetUserIdFromToken(HttpContext httpContext)
+    public async Task<string?> GetUsername(HttpContext httpContext)
     {
-        // bool isAuthenticated = httpContext.User?.Identity?.IsAuthenticated == true;
-        string token = "" + httpContext.Request.Headers["Authorization"].ToString().Split(" ")[1];
-        var claim = GetPrincipalFromToken(token).Claims.First(claim => claim.Type == ClaimTypes.NameIdentifier).Value;
-        return claim == null /*|| !isAuthenticated*/ ? "" : claim;
+        try
+        {
+            string token = "" + httpContext.Request.Headers["Authorization"].ToString().Split(" ")[1];
+            _logger.LogInformation("TokenService: Token={Token}", token);
+            var username = GetPrincipalFromToken(token).Claims.First(claim => claim.Type == ClaimTypes.NameIdentifier).Value;
+            _logger.LogInformation("TokenService: Username={Username}", username);
+            UserToken? userToken = await DbContext.UserTokens.Where(ut => ut.Token == token && ut.User!.Username == username).FirstOrDefaultAsync();
+            if (userToken == null || userToken.ExpiresDate < DateTime.Now) username = null;
+            return username ?? null;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    public async Task<User?> GetUser(HttpContext httpContext)
+    {
+        var username = await GetUsername(httpContext);
+        User? currentUser = await DbContext.Users.Where(user => user.Username == username).FirstOrDefaultAsync();
+        return currentUser;
+    }
+
+    public async Task<(User?, bool)> GetUserAndExpiredStatus(HttpContext httpContext)
+    {
+        try
+        {
+            string token = "" + httpContext.Request.Headers["Authorization"].ToString().Split(" ")[1];
+            _logger.LogInformation("TokenService: Token={Token}", token);
+            var username = GetPrincipalFromToken(token).Claims.First(claim => claim.Type == ClaimTypes.NameIdentifier).Value;
+            _logger.LogInformation("TokenService: Username={Username}", username);
+            bool isExpired = true;
+            UserToken? userToken = await DbContext.UserTokens.Where(ut => ut.Token == token && ut.User!.Username == username).FirstOrDefaultAsync();
+            if (userToken != null && userToken.ExpiresDate > DateTime.Now) isExpired = false;
+            User? currentUser = await DbContext.Users.Where(user => user.Username == username).FirstOrDefaultAsync();
+            return (currentUser, isExpired);
+        }
+        catch (Exception)
+        {
+            return (null, true);
+        }
     }
 }

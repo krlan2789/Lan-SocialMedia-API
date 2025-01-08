@@ -30,8 +30,7 @@ namespace LanGeng.API.Controllers
         {
             try
             {
-                string username = _tokenService.GetUserIdFromToken(HttpContext);
-                User? currentUser = await dbContext.Users.Where(user => user.Username == username).FirstAsync();
+                var currentUser = await _tokenService.GetUser(HttpContext);
                 if (currentUser != null)
                 {
                     return Results.Ok(new ResponseData<ResponseUserDto>("Success", currentUser.ToResponseDto()));

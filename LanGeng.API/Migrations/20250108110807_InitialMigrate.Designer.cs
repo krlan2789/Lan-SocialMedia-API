@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LanGeng.API.Migrations
 {
     [DbContext(typeof(SocialMediaDatabaseContext))]
-    [Migration("20250107123917_InitialMigrate")]
+    [Migration("20250108110807_InitialMigrate")]
     partial class InitialMigrate
     {
         /// <inheritdoc />

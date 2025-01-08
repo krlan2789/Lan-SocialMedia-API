@@ -31,8 +31,7 @@ namespace LanGeng.API.Controllers
         {
             try
             {
-                string username = _tokenService.GetUserIdFromToken(HttpContext);
-                User? currentUser = await dbContext.Users.Where(user => user.Username == username).FirstAsync();
+                var currentUser = await _tokenService.GetUser(HttpContext);
                 if (currentUser != null)
                 {
                     UserPost? post = null;
@@ -85,8 +84,7 @@ namespace LanGeng.API.Controllers
         {
             try
             {
-                string username = _tokenService.GetUserIdFromToken(HttpContext);
-                User? currentUser = await dbContext.Users.Where(user => user.Username == username).FirstAsync();
+                var currentUser = await _tokenService.GetUser(HttpContext);
                 if (currentUser != null)
                 {
                     await dbContext.UserPosts.Where(post => post.Slug == Slug).ExecuteDeleteAsync();
@@ -150,23 +148,14 @@ namespace LanGeng.API.Controllers
         {
             try
             {
-                string username = _tokenService.GetUserIdFromToken(HttpContext);
-                User? currentUser = await dbContext.Users.Where(user => user.Username == username).FirstAsync();
-                if (currentUser != null)
-                {
-                    UserPost? post = await dbContext.UserPosts
-                        .Include(up => up.Author)
-                        .Include(up => up.Group)
-                        .Include(up => up.Reactions)
-                        .Include(up => up.Comments)
-                        .Include(up => up.Hashtags)
-                        .Where(up => up.Slug == Slug).FirstOrDefaultAsync();
-                    return post == null ? Results.NotFound() : Results.Ok(new ResponseData<UserPostFullDto>("Success", post.ToFullDto()));
-                }
-                else
-                {
-                    return Results.Unauthorized();
-                }
+                UserPost? post = await dbContext.UserPosts
+                    .Include(up => up.Author)
+                    .Include(up => up.Group)
+                    .Include(up => up.Reactions)
+                    .Include(up => up.Comments)
+                    .Include(up => up.Hashtags)
+                    .Where(up => up.Slug == Slug).FirstOrDefaultAsync();
+                return post == null ? Results.NotFound() : Results.Ok(new ResponseData<UserPostFullDto>("Success", post.ToFullDto()));
             }
             catch (Exception e)
             {

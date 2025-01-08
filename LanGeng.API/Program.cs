@@ -16,6 +16,12 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
+        // Add configuration to the container
+        builder.Configuration
+            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+            .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
+            .AddEnvironmentVariables();
+
         // Add Database Context services to the container
         builder.Services
             .AddDbContext<SocialMediaDatabaseContext>(option =>
@@ -23,26 +29,12 @@ public class Program
                 option.UseSqlServer("" + builder.Configuration.GetConnectionString("DefaultConnection"));
             });
 
-        // Add configuration to the container
-        builder.Configuration
-            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-            .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
-            .AddEnvironmentVariables();
-
         // Add services to the container.
-        string tokenIssuer = "" + builder.Configuration["Jwt:Issuer"];
-        string tokenAudience = "" + builder.Configuration["Jwt:Audience"];
-        string secretKey = "" + builder.Configuration["Jwt:SecretKey"];
         builder.Services
             .AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                 options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            })
-            .AddCookie(options =>
-            {
-                options.LoginPath = "/api/auth/Login";
-                options.LogoutPath = "/api/auth/Logout";
             })
             .AddJwtBearer(options =>
             {
@@ -52,9 +44,9 @@ public class Program
                     ValidateAudience = true,
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
-                    ValidIssuer = tokenIssuer,
-                    ValidAudience = tokenAudience,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
+                    ValidIssuer = "" + builder.Configuration["Jwt:Issuer"],
+                    ValidAudience = "" + builder.Configuration["Jwt:Audience"],
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("" + builder.Configuration["Jwt:SecretKey"]))
                 };
             });
         // builder.Services
@@ -70,7 +62,8 @@ public class Program
         //                 .WithHeaders("Content-Type", "Authorization");
         //         });
         //     });
-        builder.Services.AddSingleton(new TokenService(secretKey, tokenIssuer, tokenAudience));
+        builder.Services.AddSingleton<TokenService>();
+        builder.Services.AddTransient<EmailService>();
         builder.Services.AddAuthorization();
         builder.Services.AddControllers();
         builder.Services.AddOpenApi();
@@ -90,17 +83,15 @@ public class Program
                     .WithTheme(ScalarTheme.BluePlanet)
                     .WithEndpointPrefix(scalarApiRoute)
                     .WithOpenApiRoutePattern(openApiRoute)
-                    .WithTitle("LanGeng - REST API");
+                    .WithTitle((builder.Configuration["AppName"] ?? "LanGeng") + " - REST API");
             });
 
-            // await app.MigrateDbAsync();
             using var scope = app.Services.CreateScope();
             var services = scope.ServiceProvider;
             await DatabaseSeeder.Seed(services);
         }
 
-        // Configure the HTTP request pipeline.
-        // app.UseExceptionHandler("/Error");
+        // Configure the HTTP request pipeline
         app.UseHsts();
         app.UseHttpsRedirection();
         app.UseStaticFiles();
@@ -109,7 +100,7 @@ public class Program
         // app.UseCors("AllowSpecificOrigins");
         app.UseAuthentication();
         app.UseAuthorization();
-        // app.UseSession();
+        app.UseMiddleware<AuthMiddleware>();
         app.UseMiddleware<UserSessionLoggingMiddleware>();
         app.MapControllers();
 

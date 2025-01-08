@@ -13,7 +13,7 @@ public class UserSessionLoggingMiddleware
         _next = next;
     }
 
-    public async Task Invoke(HttpContext context, SocialMediaDatabaseContext dbContext)
+    public async Task InvokeAsync(HttpContext context, SocialMediaDatabaseContext dbContext)
     {
         string ipAddress = "" + context.Connection.RemoteIpAddress?.ToString();
         string userAgent = "" + context.Request.Headers["User-Agent"].FirstOrDefault("Unknown");

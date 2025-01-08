@@ -4,7 +4,6 @@ using LanGeng.API.Entities;
 using LanGeng.API.Enums;
 using LanGeng.API.Services;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -31,8 +30,7 @@ namespace LanGeng.API.Controllers
         {
             try
             {
-                string username = _tokenService.GetUserIdFromToken(HttpContext);
-                User? currentUser = await dbContext.Users.Where(user => user.Username == username).FirstOrDefaultAsync();
+                var currentUser = await _tokenService.GetUser(HttpContext);
                 if (currentUser != null)
                 {
                     UserPost? userPost = await dbContext.UserPosts.Where(up => up.Slug == Slug).FirstOrDefaultAsync();
@@ -67,8 +65,7 @@ namespace LanGeng.API.Controllers
         {
             try
             {
-                string username = _tokenService.GetUserIdFromToken(HttpContext);
-                User? currentUser = await dbContext.Users.Where(user => user.Username == username).FirstOrDefaultAsync();
+                var currentUser = await _tokenService.GetUser(HttpContext);
                 if (currentUser != null)
                 {
                     PostComment? postComment = await dbContext.PostComments.Where(up => up.Id == Id).FirstOrDefaultAsync();

@@ -15,14 +15,16 @@ namespace LanGeng.API.Controllers
     public class AuthController : ControllerBase
     {
         private readonly ILogger<AuthController> _logger;
-        private readonly SocialMediaDatabaseContext dbContext;
         private readonly TokenService _tokenService;
+        private readonly EmailService _emailService;
+        private readonly SocialMediaDatabaseContext dbContext;
 
-        public AuthController(ILogger<AuthController> logger, TokenService tokenService, SocialMediaDatabaseContext context)
+        public AuthController(ILogger<AuthController> logger, TokenService tokenService, EmailService emailService, SocialMediaDatabaseContext context)
         {
             _logger = logger;
-            dbContext = context;
             _tokenService = tokenService;
+            _emailService = emailService;
+            dbContext = context;
         }
 
         [AllowAnonymous]
@@ -63,11 +65,12 @@ namespace LanGeng.API.Controllers
         {
             try
             {
-                string username = _tokenService.GetUserIdFromToken(HttpContext);
-                UserToken? currentUserToken = await dbContext.UserTokens.Where(ut => ut.User != null && ut.User.Username == username).FirstAsync();
+                var currentUser = await _tokenService.GetUser(HttpContext);
+                if (currentUser == null) return Results.Unauthorized();
+                UserToken? currentUserToken = await dbContext.UserTokens.Where(ut => ut.User != null && ut.User.Username == currentUser.Username).FirstAsync();
                 if (currentUserToken != null)
                 {
-                    await dbContext.UserTokens.Where(ut => ut.User != null && ut.User.Username == username).ExecuteDeleteAsync();
+                    await dbContext.UserTokens.Where(ut => ut.User != null && ut.User.Username == currentUser.Username).ExecuteDeleteAsync();
                     Response.Headers.Remove("Authorization");
                     return Results.Ok(new ResponseData<ResponseUserDto>("Logout Successfully"));
                 }
@@ -111,8 +114,21 @@ namespace LanGeng.API.Controllers
                 });
                 var result = await dbContext.SaveChangesAsync();
 
+                // Send verification code
+                var request = HttpContext.Request;
+                var verificationLink = $"{request.Scheme}://{request.Host}/api/auth/verifyemail?u={currentUser.Id}&t={"token"}";
+                await _emailService.SendEmailAsync(currentUser.Email, "Email Verification", $"Please verify your email by clicking the following link:\n\n{verificationLink}");
+
                 // Generate Token
                 var token = _tokenService.GenerateToken(currentUser.Username, TimeSpan.FromDays(30));
+                await dbContext.UserTokens.Where(ut => ut.UserId == currentUser.Id).ExecuteDeleteAsync();
+                dbContext.UserTokens.Add(new UserToken
+                {
+                    Token = token,
+                    UserId = currentUser.Id,
+                    ExpiresDate = DateTime.Now.Add(TimeSpan.FromDays(30))
+                });
+                await dbContext.SaveChangesAsync();
                 Response.Headers.Append("Authorization", $"Bearer {token}");
                 return currentUser is null && result > 0 ? Results.NotFound() : Results.Ok(
                     new ResponseData<ResponseUserDto>("Registration Successfully", token)
@@ -132,8 +148,7 @@ namespace LanGeng.API.Controllers
             {
                 // Make sure the user is authenticated
                 var verifietAt = DateTime.Now;
-                string username = _tokenService.GetUserIdFromToken(HttpContext);
-                User? currentUser = await dbContext.Users.Where(user => user.Username == username).FirstAsync();
+                var currentUser = await _tokenService.GetUser(HttpContext);
                 if (currentUser == null) return Results.Unauthorized();
 
                 // Update Verification Status
