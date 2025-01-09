@@ -5,6 +5,8 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LanGeng.API", "LanGeng.API\LanGeng.API.csproj", "{1FD1D389-43E2-4FAF-B14F-489EEB894559}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LanGeng.Test", "LanGeng.Test\LanGeng.Test.csproj", "{5F847AA2-D0FC-4268-B33D-245963F409C7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{1FD1D389-43E2-4FAF-B14F-489EEB894559}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1FD1D389-43E2-4FAF-B14F-489EEB894559}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1FD1D389-43E2-4FAF-B14F-489EEB894559}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5F847AA2-D0FC-4268-B33D-245963F409C7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5F847AA2-D0FC-4268-B33D-245963F409C7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5F847AA2-D0FC-4268-B33D-245963F409C7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5F847AA2-D0FC-4268-B33D-245963F409C7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

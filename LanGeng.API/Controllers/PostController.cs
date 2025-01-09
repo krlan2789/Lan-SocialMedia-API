@@ -10,8 +10,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LanGeng.API.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
+    [Route("api/v{version:apiVersion}/[controller]")]
+    [ApiVersion("1.0")]
     public class PostController : ControllerBase
     {
         private readonly ILogger<PostController> _logger;
@@ -79,7 +80,7 @@ namespace LanGeng.API.Controllers
         }
 
         [Authorize]
-        [HttpDelete("/{Slug}", Name = nameof(DeleteCreatePost))]
+        [HttpDelete("{Slug}", Name = nameof(DeleteCreatePost))]
         public async Task<IResult> DeleteCreatePost(string Slug)
         {
             try
@@ -143,7 +144,7 @@ namespace LanGeng.API.Controllers
             }
         }
 
-        [HttpGet("/{Slug}", Name = nameof(GetPostBySlug))]
+        [HttpGet("{Slug}", Name = nameof(GetPostBySlug))]
         public async Task<IResult> GetPostBySlug(string Slug)
         {
             try
@@ -163,7 +164,7 @@ namespace LanGeng.API.Controllers
             }
         }
 
-        [HttpGet("/u/{Username}", Name = nameof(GetPostsByUsername))]
+        [HttpGet("u/{Username}", Name = nameof(GetPostsByUsername))]
         public async Task<IResult> GetPostsByUsername(string Username, [FromQuery] int page = 1, [FromQuery] int limit = 16)
         {
             try
@@ -186,7 +187,7 @@ namespace LanGeng.API.Controllers
             }
         }
 
-        [HttpGet("/g/{GroupSlug}", Name = nameof(GetPostsByGroup))]
+        [HttpGet("g/{GroupSlug}", Name = nameof(GetPostsByGroup))]
         public async Task<IResult> GetPostsByGroup(string GroupSlug, [FromQuery] int page = 1, [FromQuery] int limit = 16)
         {
             try

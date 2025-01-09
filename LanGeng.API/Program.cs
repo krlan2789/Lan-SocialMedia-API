@@ -4,6 +4,8 @@ using LanGeng.API.Middlewares;
 using LanGeng.API.Seeders;
 using LanGeng.API.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
@@ -66,6 +68,19 @@ public class Program
         builder.Services.AddTransient<EmailService>();
         builder.Services.AddAuthorization();
         builder.Services.AddControllers();
+        builder.Services
+            .AddApiVersioning(options =>
+            {
+                options.AssumeDefaultVersionWhenUnspecified = true;
+                options.DefaultApiVersion = new ApiVersion(1, 0);
+                options.ReportApiVersions = true;
+            });
+        builder.Services
+            .AddVersionedApiExplorer(options =>
+            {
+                options.GroupNameFormat = "'v'VVV";
+                options.SubstituteApiVersionInUrl = true;
+            });
         builder.Services.AddOpenApi();
 
         var app = builder.Build();
@@ -84,6 +99,10 @@ public class Program
                     .WithEndpointPrefix(scalarApiRoute)
                     .WithOpenApiRoutePattern(openApiRoute)
                     .WithTitle((builder.Configuration["AppName"] ?? "LanGeng") + " - REST API");
+                foreach (var description in app.Services.GetRequiredService<IApiVersionDescriptionProvider>().ApiVersionDescriptions)
+                {
+                    options.WithOpenApiRoutePattern(openApiRoute.Replace("{documentName}", description.GroupName));
+                }
             });
 
             using var scope = app.Services.CreateScope();
@@ -102,6 +121,7 @@ public class Program
         app.UseAuthorization();
         app.UseMiddleware<AuthMiddleware>();
         app.UseMiddleware<UserSessionLoggingMiddleware>();
+        app.UseRouting();
         app.MapControllers();
 
         app.Run();
