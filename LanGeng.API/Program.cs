@@ -51,19 +51,18 @@ public class Program
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("" + builder.Configuration["Jwt:SecretKey"]))
                 };
             });
-        // builder.Services
-        //     .AddCors(options =>
-        //     {
-        //         options.AddPolicy("AllowSpecificOrigins", builder =>
-        //         {
-        //             builder
-        //                 .WithOrigins("http://localhost")
-        //                 .AllowAnyMethod()
-        //                 .AllowAnyHeader()
-        //                 .SetIsOriginAllowed(origin => true)
-        //                 .WithHeaders("Content-Type", "Authorization");
-        //         });
-        //     });
+        builder.Services
+            .AddCors(options =>
+            {
+                options.AddPolicy("AllowSpecificOrigins", builder =>
+                {
+                    builder
+                        .AllowAnyOrigin()
+                        .AllowAnyMethod()
+                        .AllowAnyHeader()
+                        .SetIsOriginAllowed(origin => true);
+                });
+            });
         builder.Services.AddSingleton<TokenService>();
         builder.Services.AddTransient<EmailService>();
         builder.Services.AddAuthorization();
@@ -89,7 +88,7 @@ public class Program
         if (app.Environment.IsDevelopment())
         {
             // Register the endpoint for viewing the OpenAPI Documentation
-            string openApiRoute = "/api/docs/{documentName}/openapi.json";
+            string openApiRoute = "/api/docs/{documentName}.json";
             app.MapOpenApi(openApiRoute);
             app.MapScalarApiReference(options =>
             {
@@ -111,12 +110,12 @@ public class Program
         }
 
         // Configure the HTTP request pipeline
+        app.UseCors();
         app.UseHsts();
         app.UseHttpsRedirection();
         app.UseStaticFiles();
         app.UseCookiePolicy();
         app.UseRouting();
-        // app.UseCors("AllowSpecificOrigins");
         app.UseAuthentication();
         app.UseAuthorization();
         app.UseMiddleware<AuthMiddleware>();
