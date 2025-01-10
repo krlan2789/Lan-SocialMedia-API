@@ -34,7 +34,7 @@ namespace LanGeng.API.Controllers
                 var currentUser = await _tokenService.GetUser(HttpContext);
                 if (currentUser != null)
                 {
-                    UserPost? userPost = await dbContext.UserPosts.Where(up => up.Slug == Slug).FirstOrDefaultAsync();
+                    UserPost? userPost = await dbContext.UserPosts.Where(up => up.Slug == Slug).AsNoTracking().FirstOrDefaultAsync();
                     if (userPost == null) return Results.NotFound();
                     PostReaction? postReaction = await dbContext.PostReactions.Where(pr => pr.UserId == currentUser.Id && pr.PostId == userPost.Id).FirstOrDefaultAsync();
                     if (postReaction == null)
@@ -69,7 +69,7 @@ namespace LanGeng.API.Controllers
                 var currentUser = await _tokenService.GetUser(HttpContext);
                 if (currentUser != null)
                 {
-                    PostComment? postComment = await dbContext.PostComments.Where(up => up.Id == Id).FirstOrDefaultAsync();
+                    PostComment? postComment = await dbContext.PostComments.Where(up => up.Id == Id).AsNoTracking().FirstOrDefaultAsync();
                     if (postComment == null) return Results.NotFound();
                     CommentReaction? commentReaction = await dbContext.CommentReactions.Where(pr => pr.UserId == currentUser.Id && pr.CommentId == postComment.Id).FirstOrDefaultAsync();
                     if (commentReaction == null)

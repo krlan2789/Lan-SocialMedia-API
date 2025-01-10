@@ -33,7 +33,7 @@ namespace LanGeng.API.Controllers
                 var currentUser = await _tokenService.GetUser(HttpContext);
                 if (currentUser != null)
                 {
-                    UserPost? userPost = await dbContext.UserPosts.Where(up => up.Slug == Slug).FirstOrDefaultAsync();
+                    UserPost? userPost = await dbContext.UserPosts.Where(up => up.Slug == Slug).AsNoTracking().FirstOrDefaultAsync();
                     if (userPost == null) return Results.NotFound();
                     PostComment comment = new() { PostId = userPost.Id, UserId = currentUser.Id, Content = dto.Content };
                     if (dto.ReplyId != null) comment.ReplyId = dto.ReplyId;

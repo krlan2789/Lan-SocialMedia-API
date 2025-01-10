@@ -24,6 +24,7 @@ namespace LanGeng.API.Controllers
             _logger = logger;
             dbContext = context;
             _tokenService = tokenService;
+            dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
         }
 
         [Authorize]
@@ -40,7 +41,7 @@ namespace LanGeng.API.Controllers
                     while (tryCount < 8)
                     {
                         post = dto.ToEntity(currentUser.Id);
-                        var posts = await dbContext.UserPosts.Where(up => up.Slug == post.Slug).ToListAsync();
+                        var posts = await dbContext.UserPosts.Where(up => up.Slug == post.Slug).AsTracking().ToListAsync();
                         tryCount++;
                         if (posts == null || posts.Count <= 0) break;
                         else post = null;
@@ -54,7 +55,7 @@ namespace LanGeng.API.Controllers
                     {
                         foreach (string tag in tags)
                         {
-                            Hashtag? hashtag = await dbContext.Hashtags.Where(h => h.Tag == tag).FirstOrDefaultAsync();
+                            Hashtag? hashtag = await dbContext.Hashtags.Where(h => h.Tag == tag).AsTracking().FirstOrDefaultAsync();
                             if (hashtag == null)
                             {
                                 hashtag = new Hashtag { Tag = tag.Replace("#", "") };
@@ -88,7 +89,7 @@ namespace LanGeng.API.Controllers
                 var currentUser = await _tokenService.GetUser(HttpContext);
                 if (currentUser != null)
                 {
-                    await dbContext.UserPosts.Where(post => post.Slug == Slug).ExecuteDeleteAsync();
+                    await dbContext.UserPosts.Where(post => post.Slug == Slug).AsTracking().ExecuteDeleteAsync();
                     return Results.Ok(new ResponseData<UserPostDto>("Post deleted Successfully"));
                 }
                 else
@@ -103,12 +104,12 @@ namespace LanGeng.API.Controllers
         }
 
         [HttpGet(Name = nameof(GetPosts))]
-        public async Task<IResult> GetPosts([FromQuery] FilterUserPostDto filters)
+        public async Task<IResult> GetPosts([FromQuery] FilterPostDto filters)
         {
             try
             {
                 var tags = ("" + filters.Tags).ToLower().Replace("#", "").Split(",");
-                int defaultLimit = 16;
+                var defaultLimit = 16;
                 string keyword = $"%{filters.Keyword}%";
                 var query = dbContext.UserPosts
                     .Include(up => up.Author)
@@ -119,20 +120,26 @@ namespace LanGeng.API.Controllers
                     .Where(up =>
                         (string.IsNullOrEmpty(filters.Tags) || up.Hashtags.Select(t => tags.Contains(t.Tag)).Count() > 0) &&
                         (string.IsNullOrEmpty(filters.Author) || EF.Functions.Like(up.Author!.Username, filters.Author) || EF.Functions.Like(up.Author!.Fullname, filters.Author)) &&
-                        (string.IsNullOrEmpty(filters.Keyword) || EF.Functions.Like(up.Content, keyword) || up.Author == null || EF.Functions.Like(up.Author.Username, keyword) || EF.Functions.Like(up.Author.Fullname, keyword) || up.Group == null || EF.Functions.Like(up.Group.Name, keyword))
+                        (string.IsNullOrEmpty(filters.Group) || (up.Group != null && (EF.Functions.Like(up.Group.Slug, filters.Group) || EF.Functions.Like(up.Group.Slug, filters.Group)))) &&
+                        (
+                            string.IsNullOrEmpty(filters.Keyword) || EF.Functions.Like(up.Content, keyword) ||
+                            up.Author == null || EF.Functions.Like(up.Author.Username, keyword) || EF.Functions.Like(up.Author.Fullname, keyword) ||
+                            up.Group == null || EF.Functions.Like(up.Group.Slug, keyword) || EF.Functions.Like(up.Group.Name, keyword)
+                        )
                     );
-                int totalPosts = await query.CountAsync();
+                var totalPosts = await query.CountAsync();
+                var limit = filters.Limit ?? defaultLimit;
+                var start = ((filters.Page > 0 ? filters.Page : 1) - 1) * limit;
                 var posts = await query
-                    .Skip(((filters.Page > 0 ? filters.Page : 1) - 1) * (filters.Limit ?? defaultLimit))
-                    .Take(filters.Limit ?? defaultLimit)
+                    .Take(start..(start + limit))
                     .OrderBy(p => p.UpdatedAt)
                     .ToListAsync();
                 var postsDto = posts.Select(post => post.ToDto()).ToList();
                 return Results.Ok(new ResponseData<ResponsePostsDto>(
-                    "Success " + string.Join(",", tags),
+                    "Success",
                     new ResponsePostsDto(
                         filters.Page > 0 ? filters.Page : 1,
-                        filters.Limit ?? defaultLimit,
+                        limit,
                         totalPosts,
                         postsDto
                     )
@@ -155,48 +162,9 @@ namespace LanGeng.API.Controllers
                     .Include(up => up.Reactions)
                     .Include(up => up.Comments)
                     .Include(up => up.Hashtags)
-                    .Where(up => up.Slug == Slug).FirstOrDefaultAsync();
+                    .Where(up => up.Slug == Slug)
+                    .FirstOrDefaultAsync();
                 return post == null ? Results.NotFound() : Results.Ok(new ResponseData<UserPostFullDto>("Success", post.ToFullDto()));
-            }
-            catch (Exception e)
-            {
-                return Results.BadRequest(new ResponseData<object>(e.Message));
-            }
-        }
-
-        [HttpGet("u/{Username}", Name = nameof(GetPostsByUsername))]
-        public async Task<IResult> GetPostsByUsername(string Username, [FromQuery] int page = 1, [FromQuery] int limit = 16)
-        {
-            try
-            {
-                var posts = await dbContext.UserPosts
-                    .Include(up => up.Author)
-                    .Include(up => up.Group)
-                    .Include(up => up.Reactions)
-                    .Include(up => up.Comments)
-                    .Include(up => up.Hashtags)
-                    .Where(up => up.Author != null && up.Author.Username == Username).Skip((page - 1) * limit).Take(limit).ToListAsync();
-                return Results.Ok(new ResponseData<List<UserPostDto>>(
-                    "Success",
-                    posts.Select(post => post.ToDto()).ToList()
-                ));
-            }
-            catch (Exception e)
-            {
-                return Results.BadRequest(new ResponseData<object>(e.Message));
-            }
-        }
-
-        [HttpGet("g/{GroupSlug}", Name = nameof(GetPostsByGroup))]
-        public async Task<IResult> GetPostsByGroup(string GroupSlug, [FromQuery] int page = 1, [FromQuery] int limit = 16)
-        {
-            try
-            {
-                var posts = await dbContext.UserPosts.Where(up => up.Group != null && up.Group.Slug == GroupSlug).Skip((page - 1) * limit).Take(limit).ToListAsync();
-                return Results.Ok(new ResponseData<List<UserPostDto>>(
-                    "Success",
-                    posts.Select(post => post.ToDto()).ToList()
-                ));
             }
             catch (Exception e)
             {

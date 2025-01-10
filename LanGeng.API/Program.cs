@@ -30,7 +30,6 @@ public class Program
             {
                 option.UseSqlServer("" + builder.Configuration.GetConnectionString("DefaultConnection"));
             });
-
         // Add services to the container.
         builder.Services
             .AddAuthentication(options =>

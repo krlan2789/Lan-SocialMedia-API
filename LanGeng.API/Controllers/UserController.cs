@@ -23,6 +23,7 @@ namespace LanGeng.API.Controllers
             _logger = logger;
             dbContext = context;
             _tokenService = tokenService;
+            dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
         }
 
         [Authorize]
