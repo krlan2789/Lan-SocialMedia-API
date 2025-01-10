@@ -15,7 +15,7 @@ public class TokenService
     private readonly string _audience;
     private readonly ILogger<TokenService> _logger;
     private readonly IServiceProvider _serviceProvider;
-    private SocialMediaDatabaseContext DbContext => _serviceProvider.CreateScope().ServiceProvider.GetRequiredService<SocialMediaDatabaseContext>();
+    private readonly SocialMediaDatabaseContext DbContext;
 
     public TokenService(IConfiguration configuration, ILogger<TokenService> logger, IServiceProvider serviceProvider)
     {
@@ -24,6 +24,7 @@ public class TokenService
         _audience = "" + configuration["Jwt:Audience"];
         _logger = logger;
         _serviceProvider = serviceProvider;
+        DbContext = _serviceProvider.CreateScope().ServiceProvider.GetRequiredService<SocialMediaDatabaseContext>();
     }
 
     public string GenerateToken(string Username, TimeSpan expiration)
