@@ -51,6 +51,7 @@ namespace LanGeng.API.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Name = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
                     Slug = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
+                    PrivacyType = table.Column<byte>(type: "tinyint", nullable: false),
                     ProfileImage = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     CreatorId = table.Column<int>(type: "int", nullable: false),
@@ -64,8 +65,7 @@ namespace LanGeng.API.Migrations
                         name: "FK_Groups_Users_CreatorId",
                         column: x => x.CreatorId,
                         principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -114,8 +114,7 @@ namespace LanGeng.API.Migrations
                         name: "FK_UserSessionLogs_Users_UserId",
                         column: x => x.UserId,
                         principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -194,9 +193,11 @@ namespace LanGeng.API.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
+                    Slug = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
                     Status = table.Column<byte>(type: "tinyint", nullable: false),
                     GroupId = table.Column<int>(type: "int", nullable: false),
                     MemberId = table.Column<int>(type: "int", nullable: false),
+                    JoinedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
@@ -214,7 +215,7 @@ namespace LanGeng.API.Migrations
                         column: x => x.MemberId,
                         principalTable: "Users",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -268,14 +269,12 @@ namespace LanGeng.API.Migrations
                         name: "FK_PostComments_PostComments_ReplyId",
                         column: x => x.ReplyId,
                         principalTable: "PostComments",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_PostComments_UserPosts_PostId",
                         column: x => x.PostId,
                         principalTable: "UserPosts",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_PostComments_Users_UserId",
                         column: x => x.UserId,
@@ -300,13 +299,13 @@ namespace LanGeng.API.Migrations
                         column: x => x.HashtagId,
                         principalTable: "Hashtags",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_PostHashtags_UserPosts_PostId",
                         column: x => x.PostId,
                         principalTable: "UserPosts",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -328,8 +327,7 @@ namespace LanGeng.API.Migrations
                         name: "FK_PostReactions_UserPosts_PostId",
                         column: x => x.PostId,
                         principalTable: "UserPosts",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_PostReactions_Users_UserId",
                         column: x => x.UserId,
@@ -396,14 +394,12 @@ namespace LanGeng.API.Migrations
                         name: "FK_CommentReactions_PostComments_CommentId",
                         column: x => x.CommentId,
                         principalTable: "PostComments",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_CommentReactions_Users_UserId",
                         column: x => x.UserId,
                         principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateIndex(
@@ -420,6 +416,12 @@ namespace LanGeng.API.Migrations
                 name: "IX_GroupMembers_MemberId",
                 table: "GroupMembers",
                 column: "MemberId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_GroupMembers_Slug",
+                table: "GroupMembers",
+                column: "Slug",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Groups_CreatorId",

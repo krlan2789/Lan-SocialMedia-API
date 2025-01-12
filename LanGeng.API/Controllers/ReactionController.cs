@@ -26,7 +26,7 @@ namespace LanGeng.API.Controllers
         }
 
         [Authorize]
-        [HttpPost("post/{Slug}/{Reaction}", Name = nameof(ReactPost))]
+        [HttpPost("post/{Slug}/{Reaction}")]
         public async Task<IResult> ReactPost(string Slug, ReactionTypeEnum Reaction)
         {
             try
@@ -61,7 +61,7 @@ namespace LanGeng.API.Controllers
         }
 
         [Authorize]
-        [HttpPost("comment/{Id}/{Reaction}", Name = nameof(ReactComment))]
+        [HttpPost("comment/{Id}/{Reaction}")]
         public async Task<IResult> ReactComment(int Id, ReactionTypeEnum Reaction)
         {
             try

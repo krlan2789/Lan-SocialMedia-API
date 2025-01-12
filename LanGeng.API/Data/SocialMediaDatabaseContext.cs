@@ -68,15 +68,18 @@ public class SocialMediaDatabaseContext(DbContextOptions<SocialMediaDatabaseCont
         modelBuilder.Entity<Group>(entity =>
         {
             entity.HasIndex(e => e.Slug).IsUnique();
-            entity.HasOne(e => e.Creator).WithMany().HasForeignKey(r => r.CreatorId).OnDelete(DeleteBehavior.Restrict);
-            entity.HasMany(e => e.Members).WithOne(r => r.Group).HasForeignKey(r => r.GroupId);
+            entity.Property(e => e.PrivacyType).HasConversion<byte>();
+            entity.HasOne(e => e.Creator).WithMany().HasForeignKey(r => r.CreatorId).OnDelete(DeleteBehavior.NoAction);
+            entity.HasMany(e => e.Members).WithOne(r => r.Group).HasForeignKey(r => r.GroupId).OnDelete(DeleteBehavior.Cascade);
         });
 
         // GroupMembers Table
         modelBuilder.Entity<GroupMember>(entity =>
         {
+            entity.HasIndex(e => e.Slug).IsUnique();
+            entity.Property(e => e.Status).HasConversion<byte>();
             entity.HasOne(e => e.Group).WithMany(r => r.Members).HasForeignKey(r => r.MemberId);
-            entity.HasOne(e => e.Member).WithMany().HasForeignKey(r => r.MemberId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Member).WithMany().HasForeignKey(r => r.MemberId);//.OnDelete(DeleteBehavior.Restrict);
         });
 
         // UserPosts Table
@@ -87,7 +90,7 @@ public class SocialMediaDatabaseContext(DbContextOptions<SocialMediaDatabaseCont
             entity.HasOne(e => e.Group).WithMany().HasForeignKey(r => r.GroupId);
             entity.HasMany(e => e.Comments).WithOne(r => r.Post).HasForeignKey(r => r.PostId);
             entity.HasMany(e => e.Reactions).WithOne(r => r.Post).HasForeignKey(r => r.PostId);
-            entity.HasMany(e => e.PostHashtags).WithOne(e => e.Post).HasForeignKey(r => r.PostId);
+            entity.HasMany(e => e.PostHashtags).WithOne(e => e.Post).HasForeignKey(r => r.PostId).OnDelete(DeleteBehavior.Cascade);
             entity.HasMany(e => e.Hashtags).WithMany(e => e.Posts).UsingEntity<PostHashtag>(
             // l => l.HasOne<Hashtag>().WithMany().HasForeignKey(e => e.HashtagId),
             // r => r.HasOne<UserPost>().WithMany().HasForeignKey(e => e.PostId)
@@ -98,7 +101,7 @@ public class SocialMediaDatabaseContext(DbContextOptions<SocialMediaDatabaseCont
         modelBuilder.Entity<Hashtag>(entity =>
         {
             entity.HasIndex(e => e.Tag).IsUnique();
-            entity.HasMany(e => e.PostHashtags).WithOne(e => e.Hashtag).HasForeignKey(r => r.HashtagId);
+            entity.HasMany(e => e.PostHashtags).WithOne(e => e.Hashtag).HasForeignKey(r => r.HashtagId).OnDelete(DeleteBehavior.Cascade);
             // entity.HasMany(e => e.Posts).WithMany(e => e.Hashtags).UsingEntity<PostHashtag>(
             //     l => l.HasOne<UserPost>().WithMany().HasForeignKey(e => e.PostId),
             //     r => r.HasOne<Hashtag>().WithMany().HasForeignKey(e => e.HashtagId)
@@ -109,16 +112,16 @@ public class SocialMediaDatabaseContext(DbContextOptions<SocialMediaDatabaseCont
         modelBuilder.Entity<PostHashtag>(entity =>
         {
             entity.HasKey(e => new { e.PostId, e.HashtagId });
-            entity.HasOne(e => e.Hashtag).WithMany(r => r.PostHashtags).HasForeignKey(r => r.HashtagId).OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne(e => e.Post).WithMany(r => r.PostHashtags).HasForeignKey(r => r.PostId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Hashtag).WithMany(r => r.PostHashtags).HasForeignKey(r => r.HashtagId);//.OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Post).WithMany(r => r.PostHashtags).HasForeignKey(r => r.PostId);//.OnDelete(DeleteBehavior.Restrict);
         });
 
         // PostComments Table
         modelBuilder.Entity<PostComment>(entity =>
         {
             entity.HasOne(e => e.User).WithMany().HasForeignKey(r => r.UserId).OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne(e => e.Post).WithMany(r => r.Comments).HasForeignKey(r => r.PostId).OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne(e => e.Reply).WithMany().HasForeignKey(r => r.ReplyId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Post).WithMany(r => r.Comments).HasForeignKey(r => r.PostId).OnDelete(DeleteBehavior.NoAction);
+            entity.HasOne(e => e.Reply).WithMany().HasForeignKey(r => r.ReplyId).OnDelete(DeleteBehavior.NoAction);
             entity.HasMany(e => e.Reactions).WithOne(r => r.Comment).HasForeignKey(r => r.CommentId);
         });
 
@@ -127,15 +130,15 @@ public class SocialMediaDatabaseContext(DbContextOptions<SocialMediaDatabaseCont
         {
             entity.Property(e => e.Type).HasConversion<byte>();
             entity.HasOne(e => e.User).WithMany().HasForeignKey(r => r.UserId).OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne(e => e.Post).WithMany(r => r.Reactions).HasForeignKey(r => r.PostId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Post).WithMany(r => r.Reactions).HasForeignKey(r => r.PostId).OnDelete(DeleteBehavior.NoAction);
         });
 
         // CommentReactions Table
         modelBuilder.Entity<CommentReaction>(entity =>
         {
             entity.Property(e => e.Type).HasConversion<byte>();
-            entity.HasOne(e => e.User).WithMany().HasForeignKey(r => r.UserId).OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne(e => e.Comment).WithMany(r => r.Reactions).HasForeignKey(r => r.CommentId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.User).WithMany().HasForeignKey(r => r.UserId).OnDelete(DeleteBehavior.NoAction);
+            entity.HasOne(e => e.Comment).WithMany(r => r.Reactions).HasForeignKey(r => r.CommentId).OnDelete(DeleteBehavior.NoAction);
         });
 
         // UserEvents Table
@@ -150,7 +153,7 @@ public class SocialMediaDatabaseContext(DbContextOptions<SocialMediaDatabaseCont
         // UserSessionLogs Table
         modelBuilder.Entity<UserSessionLog>(entity =>
         {
-            entity.HasOne(e => e.User).WithMany().HasForeignKey(r => r.UserId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.User).WithMany().HasForeignKey(r => r.UserId).OnDelete(DeleteBehavior.NoAction);
         });
     }
 

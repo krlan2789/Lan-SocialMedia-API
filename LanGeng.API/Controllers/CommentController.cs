@@ -25,7 +25,7 @@ namespace LanGeng.API.Controllers
         }
 
         [Authorize]
-        [HttpPost("post/{Slug}", Name = nameof(CreatePostComment))]
+        [HttpPost("post/{Slug}")]
         public async Task<IResult> CreatePostComment(string Slug, CreatePostCommentDto dto)
         {
             try

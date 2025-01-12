@@ -51,12 +51,13 @@ ASP.NET Project - Social Media REST API
 
 ### 1.2.3. Table UserStatus
 
-|     | Name          | Type     |                                                       |
-| --- | ------------- | -------- | ----------------------------------------------------- |
-| PK  | **Id**        | int      | Auto-increament                                       |
-|     | AccountStatus | byte     | Enum(1=Unverified, 2=Verified, 3=Suspend, 4=Inactive) |
-| FK  | **UserId**    | int      |                                                       |
-|     | CreatedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss'                     |
+|     | Name          | Type     |                                           |
+| --- | ------------- | -------- | ----------------------------------------- |
+| PK  | **Id**        | int      | Auto-increament                           |
+|     | AccountStatus | byte     | Enum(1=Unverified, 2=Verified, 3=Suspend, |
+|     |               |          | 4=Inactive)                               |
+| FK  | **UserId**    | int      |                                           |
+|     | CreatedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss'         |
 
 ### 1.2.4. Table UserTokens
 
@@ -75,7 +76,7 @@ ASP.NET Project - Social Media REST API
 | --- | ---------------- | -------- | ------------------------------------------- |
 | PK  | **Id**           | int      | Auto-increament                             |
 |     | Code             | string   | Length(6)                                   |
-|     | VerificationType | byte     | Enum(1=Register, 10=UsernameChanges         |
+|     | VerificationType | byte     | Enum(1=Register, 10=UsernameChanges,        |
 |     |                  |          | 20=PasswordChanges, 21=PasswordReset)       |
 |     | PhoneNumber      | string   | Length(32), nullable                        |
 |     | Email            | string   | Length(128), nullable                       |
@@ -97,27 +98,31 @@ ASP.NET Project - Social Media REST API
 
 ### 1.2.7. Table Groups
 
-|     | Name          | Type     |                                   |
-| --- | ------------- | -------- | --------------------------------- |
-| PK  | **Id**        | int      | Auto-increament                   |
-|     | Name          | string   | Length(255)                       |
-|     | Slug          | string   | Length(255), unique               |
-|     | ProfileImage  | string   | nullable                          |
-|     | Description   | string   | Length(1024), nullable            |
-| FK  | **CreatorId** | int      |                                   |
-|     | CreatedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
-|     | UpdatedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
+|     | Name          | Type     |                                        |
+| --- | ------------- | -------- | -------------------------------------- |
+| PK  | **Id**        | int      | Auto-increament                        |
+|     | Name          | string   | Length(255)                            |
+|     | Slug          | string   | Length(255), unique                    |
+|     | PrivacyType   | byte     | Enum(0=Public, 1=Protected, 2=Private) |
+|     | ProfileImage  | string   | nullable                               |
+|     | Description   | string   | Length(1024), nullable                 |
+| FK  | **CreatorId** | int      |                                        |
+|     | CreatedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss'      |
+|     | UpdatedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss'      |
 
 ### 1.2.8. Table GroupMembers
 
-|     | Name         | Type     |                                                 |
-| --- | ------------ | -------- | ----------------------------------------------- |
-| PK  | **Id**       | int      | Auto-increament                                 |
-|     | Status       | byte     | Enum(0=Request, 1=Rejected, 2=Approved, 3=Left) |
-| FK  | **GroupId**  | int      |                                                 |
-| FK  | **MemberId** | int      |                                                 |
-|     | CreatedAt    | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss'               |
-|     | UpdatedAt    | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss'               |
+|     | Name         | Type     |                                             |
+| --- | ------------ | -------- | ------------------------------------------- |
+| PK  | **Id**       | int      | Auto-increament                             |
+|     | Slug         | string   | Length(255), unique                         |
+|     | Status       | byte     | Enum(0=Request, 1=Rejected, 2=Approved,     |
+|     |              |          | 3=Left, 4=Removed)                          |
+| FK  | **GroupId**  | int      |                                             |
+| FK  | **MemberId** | int      |                                             |
+|     | JoinedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss', nullable |
+|     | CreatedAt    | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss'           |
+|     | UpdatedAt    | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss'           |
 
 ### 1.2.9. Table UserPosts
 

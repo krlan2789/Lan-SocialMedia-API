@@ -27,9 +27,26 @@ namespace LanGeng.API.Controllers
             dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
         }
 
+        [HttpGet("{Slug}")]
+        public async Task<IResult> GetBySlug(string Slug)
+        {
+            try
+            {
+                UserPost? post = await dbContext.UserPosts
+                    .IncludeAll()
+                    .Where(up => up.Slug == Slug)
+                    .FirstOrDefaultAsync();
+                return post == null ? Results.NotFound() : Results.Ok(new ResponseData<UserPostFullDto>("Success", post.ToFullDto()));
+            }
+            catch (Exception e)
+            {
+                return Results.BadRequest(new ResponseData<object>(e.Message));
+            }
+        }
+
         [Authorize]
-        [HttpPost(Name = nameof(PostCreatePost))]
-        public async Task<IResult> PostCreatePost(CreateUserPostDto dto)
+        [HttpPost()]
+        public async Task<IResult> Create(CreateUserPostDto dto)
         {
             try
             {
@@ -38,7 +55,7 @@ namespace LanGeng.API.Controllers
                 {
                     UserPost? post = null;
                     int tryCount = 0;
-                    while (tryCount < 8)
+                    while (tryCount < 16)
                     {
                         post = dto.ToEntity(currentUser.Id);
                         var posts = await dbContext.UserPosts.Where(up => up.Slug == post.Slug).AsTracking().ToListAsync();
@@ -81,8 +98,8 @@ namespace LanGeng.API.Controllers
         }
 
         [Authorize]
-        [HttpDelete("{Slug}", Name = nameof(DeleteCreatePost))]
-        public async Task<IResult> DeleteCreatePost(string Slug)
+        [HttpDelete("{Slug}")]
+        public async Task<IResult> Delete(string Slug)
         {
             try
             {
@@ -103,35 +120,34 @@ namespace LanGeng.API.Controllers
             }
         }
 
-        [HttpGet(Name = nameof(GetPosts))]
-        public async Task<IResult> GetPosts([FromQuery] FilterPostDto filters)
+        [HttpGet()]
+        public async Task<IResult> GetPerPage([FromQuery] FilterPostDto filters)
         {
             try
             {
                 var tags = ("" + filters.Tags).ToLower().Replace("#", "").Split(",");
                 var defaultLimit = 16;
-                string keyword = $"%{filters.Keyword}%";
+                string keyword = $"%{filters.Keyword}%".ToLower();
+                string author = $"%{filters.Author}%".ToLower();
+                string group = $"%{filters.Group}%".ToLower();
                 var query = dbContext.UserPosts
-                    .Include(up => up.Author)
-                    .Include(up => up.Group)
-                    .Include(up => up.Reactions)
-                    .Include(up => up.Comments)
-                    .Include(up => up.Hashtags)
+                    .IncludeAll()
                     .Where(up =>
-                        (string.IsNullOrEmpty(filters.Tags) || up.Hashtags.Select(t => tags.Contains(t.Tag)).Count() > 0) &&
-                        (string.IsNullOrEmpty(filters.Author) || EF.Functions.Like(up.Author!.Username, filters.Author) || EF.Functions.Like(up.Author!.Fullname, filters.Author)) &&
-                        (string.IsNullOrEmpty(filters.Group) || (up.Group != null && (EF.Functions.Like(up.Group.Slug, filters.Group) || EF.Functions.Like(up.Group.Slug, filters.Group)))) &&
+                        (string.IsNullOrEmpty(filters.Tags) || up.Hashtags.Any(t => tags.Contains(t.Tag))) &&
+                        (string.IsNullOrEmpty(filters.Author) || EF.Functions.Like(up.Author!.Username.ToLower(), author) || EF.Functions.Like(up.Author!.Fullname.ToLower(), author)) &&
+                        (string.IsNullOrEmpty(filters.Group) || (up.Group != null && (EF.Functions.Like(up.Group.Slug.ToLower(), group) || EF.Functions.Like(up.Group.Name.ToLower(), group)))) &&
                         (
-                            string.IsNullOrEmpty(filters.Keyword) || EF.Functions.Like(up.Content, keyword) ||
-                            up.Author == null || EF.Functions.Like(up.Author.Username, keyword) || EF.Functions.Like(up.Author.Fullname, keyword) ||
-                            up.Group == null || EF.Functions.Like(up.Group.Slug, keyword) || EF.Functions.Like(up.Group.Name, keyword)
+                            string.IsNullOrEmpty(filters.Keyword) || EF.Functions.Like(("" + up.Content).ToLower(), keyword) ||
+                            up.Author == null || EF.Functions.Like(up.Author.Username.ToLower(), keyword) || EF.Functions.Like(up.Author.Fullname.ToLower(), keyword) ||
+                            up.Group == null || EF.Functions.Like(up.Group.Slug.ToLower(), keyword) || EF.Functions.Like(up.Group.Name.ToLower(), keyword)
                         )
                     );
                 var totalPosts = await query.CountAsync();
                 var limit = filters.Limit ?? defaultLimit;
                 var start = ((filters.Page > 0 ? filters.Page : 1) - 1) * limit;
                 var posts = await query
-                    .Take(start..(start + limit))
+                    .Skip(start)
+                    .Take(limit)
                     .OrderBy(p => p.UpdatedAt)
                     .ToListAsync();
                 var postsDto = posts.Select(post => post.ToDto()).ToList();
@@ -144,27 +160,6 @@ namespace LanGeng.API.Controllers
                         postsDto
                     )
                 ));
-            }
-            catch (Exception e)
-            {
-                return Results.BadRequest(new ResponseData<object>(e.Message));
-            }
-        }
-
-        [HttpGet("{Slug}", Name = nameof(GetPostBySlug))]
-        public async Task<IResult> GetPostBySlug(string Slug)
-        {
-            try
-            {
-                UserPost? post = await dbContext.UserPosts
-                    .Include(up => up.Author)
-                    .Include(up => up.Group)
-                    .Include(up => up.Reactions)
-                    .Include(up => up.Comments)
-                    .Include(up => up.Hashtags)
-                    .Where(up => up.Slug == Slug)
-                    .FirstOrDefaultAsync();
-                return post == null ? Results.NotFound() : Results.Ok(new ResponseData<UserPostFullDto>("Success", post.ToFullDto()));
             }
             catch (Exception e)
             {

@@ -1,5 +1,6 @@
 using System.Text;
 using LanGeng.API.Data;
+using LanGeng.API.Helper;
 using LanGeng.API.Middlewares;
 using LanGeng.API.Seeders;
 using LanGeng.API.Services;
@@ -65,7 +66,9 @@ public class Program
         builder.Services.AddSingleton<TokenService>();
         builder.Services.AddTransient<EmailService>();
         builder.Services.AddAuthorization();
-        builder.Services.AddControllers();
+        builder.Services
+            .AddControllers()
+            .AddNewtonsoftJson();
         builder.Services
             .AddApiVersioning(options =>
             {

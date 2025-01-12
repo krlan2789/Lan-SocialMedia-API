@@ -1,5 +1,6 @@
 using LanGeng.API.Dtos;
 using LanGeng.API.Entities;
+using LanGeng.API.Helper;
 
 namespace LanGeng.API.Mapping;
 
@@ -9,7 +10,7 @@ public static class UserPostMapping
     {
         var post = new UserPost
         {
-            Slug = Guid.NewGuid().ToString().Replace("-", "")[..16],
+            Slug = SlugHelper.Create("" + dto.Content),
             AuthorId = authorId,
             CommentAvailability = dto.CommentAvailability ?? true
         };

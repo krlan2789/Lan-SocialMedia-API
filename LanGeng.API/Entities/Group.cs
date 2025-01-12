@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using LanGeng.API.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace LanGeng.API.Entities;
@@ -15,6 +16,9 @@ public class Group
 
     [Required, MaxLength(255)]
     public required string Slug { get; set; }
+
+    [Required]
+    public required PrivacyTypeEnum PrivacyType { get; set; }
 
     public string? ProfileImage { get; set; }
     public string? Description { get; set; }

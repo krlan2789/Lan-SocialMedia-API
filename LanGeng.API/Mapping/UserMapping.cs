@@ -2,6 +2,7 @@ using System.Text.RegularExpressions;
 using LanGeng.API.Dtos;
 using LanGeng.API.Entities;
 using LanGeng.API.Helper;
+using Microsoft.EntityFrameworkCore;
 
 namespace LanGeng.API.Mapping;
 
@@ -39,5 +40,15 @@ public static class UserMapping
     public static bool VerifyPassword(this User user, string password)
     {
         return password.VerifyHashed(user.PasswordHash);
+    }
+
+    public static IQueryable<UserPost> IncludeAll(this DbSet<UserPost> post)
+    {
+        return post
+            .Include(up => up.Author)
+            .Include(up => up.Group)
+            .Include(up => up.Reactions)
+            .Include(up => up.Comments)
+            .Include(up => up.Hashtags);
     }
 }

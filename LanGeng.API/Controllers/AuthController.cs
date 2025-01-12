@@ -6,6 +6,7 @@ using LanGeng.API.Mapping;
 using LanGeng.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.EntityFrameworkCore;
 
 namespace LanGeng.API.Controllers
@@ -29,7 +30,7 @@ namespace LanGeng.API.Controllers
         }
 
         [AllowAnonymous]
-        [HttpPost("login", Name = nameof(PostLogin))]
+        [HttpPost("login")]
         public async Task<IResult> PostLogin(LoginUserDto dto)
         {
             try
@@ -61,7 +62,7 @@ namespace LanGeng.API.Controllers
         }
 
         [Authorize]
-        [HttpPost("logout", Name = nameof(PostLogout))]
+        [HttpPost("logout")]
         public async Task<IResult> PostLogout()
         {
             try
@@ -87,7 +88,7 @@ namespace LanGeng.API.Controllers
         }
 
         [AllowAnonymous]
-        [HttpPost("register", Name = nameof(PostRegister))]
+        [HttpPost("register")]
         public async Task<IResult> PostRegister([FromBody] RegisterUserDto userDto)
         {
             try
@@ -142,7 +143,7 @@ namespace LanGeng.API.Controllers
         }
 
         [Authorize]
-        [HttpPatch("verify", Name = nameof(PatchVerifyAccount))]
+        [HttpPatch("verify")]
         public async Task<IResult> PatchVerifyAccount([FromBody] VerifyAccountDto dto)
         {
             try

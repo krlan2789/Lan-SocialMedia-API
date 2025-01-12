@@ -76,6 +76,9 @@ namespace LanGeng.API.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
+                    b.Property<byte>("PrivacyType")
+                        .HasColumnType("tinyint");
+
                     b.Property<string>("ProfileImage")
                         .HasColumnType("nvarchar(max)");
 
@@ -111,8 +114,16 @@ namespace LanGeng.API.Migrations
                     b.Property<int>("GroupId")
                         .HasColumnType("int");
 
+                    b.Property<DateTime?>("JoinedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<int>("MemberId")
                         .HasColumnType("int");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<byte>("Status")
                         .HasColumnType("tinyint");
@@ -123,6 +134,9 @@ namespace LanGeng.API.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("MemberId");
+
+                    b.HasIndex("Slug")
+                        .IsUnique();
 
                     b.ToTable("GroupMembers");
                 });
@@ -581,13 +595,13 @@ namespace LanGeng.API.Migrations
                     b.HasOne("LanGeng.API.Entities.PostComment", "Comment")
                         .WithMany("Reactions")
                         .HasForeignKey("CommentId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.HasOne("LanGeng.API.Entities.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Comment");
@@ -600,7 +614,7 @@ namespace LanGeng.API.Migrations
                     b.HasOne("LanGeng.API.Entities.User", "Creator")
                         .WithMany()
                         .HasForeignKey("CreatorId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Creator");
@@ -617,7 +631,7 @@ namespace LanGeng.API.Migrations
                     b.HasOne("LanGeng.API.Entities.User", "Member")
                         .WithMany()
                         .HasForeignKey("MemberId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Group");
@@ -630,13 +644,13 @@ namespace LanGeng.API.Migrations
                     b.HasOne("LanGeng.API.Entities.UserPost", "Post")
                         .WithMany("Comments")
                         .HasForeignKey("PostId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.HasOne("LanGeng.API.Entities.PostComment", "Reply")
                         .WithMany()
                         .HasForeignKey("ReplyId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("LanGeng.API.Entities.User", "User")
                         .WithMany()
@@ -656,13 +670,13 @@ namespace LanGeng.API.Migrations
                     b.HasOne("LanGeng.API.Entities.Hashtag", "Hashtag")
                         .WithMany("PostHashtags")
                         .HasForeignKey("HashtagId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("LanGeng.API.Entities.UserPost", "Post")
                         .WithMany("PostHashtags")
                         .HasForeignKey("PostId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Hashtag");
@@ -675,7 +689,7 @@ namespace LanGeng.API.Migrations
                     b.HasOne("LanGeng.API.Entities.UserPost", "Post")
                         .WithMany("Reactions")
                         .HasForeignKey("PostId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.HasOne("LanGeng.API.Entities.User", "User")
@@ -745,7 +759,7 @@ namespace LanGeng.API.Migrations
                     b.HasOne("LanGeng.API.Entities.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.Navigation("User");
                 });

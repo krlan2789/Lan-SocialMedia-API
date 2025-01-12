@@ -1,9 +1,9 @@
 @HostAddress = http://localhost:5041/api/v1
-@UsernameOther = jewel
-@UsernameOther2 = liza
-@UsernameValid = adam
+@UsernameOther = jaylon
+@UsernameOther2 = della
+@UsernameValid = nona
 @PasswordValid = 12345678
-@TokenValid = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZGFtIiwianRpIjoiOGQ1ZGQxNWUtNmYwOS00NmY1LTgyZjYtMjUxZTM1MzUyN2Q4IiwiZXhwIjoxNzM4OTI2NzQ3LCJpc3MiOiJodHRwczovL2xvY2FsaG9zdDo1MDQxIiwiYXVkIjoiaHR0cHM6Ly9sb2NhbGhvc3Q6NTA0MSJ9.-K5e3pcuwoeAlL9Gs0KklqYBnSkEQa13c0bzox89-fc
+@TokenValid = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJub25hIiwianRpIjoiNDJmZmYxYmUtMjM5MC00NzdhLTliMDgtNDdkMTU1NmFmYmZhIiwiZXhwIjoxNzM5MTc1NjU2LCJpc3MiOiJodHRwczovL2xvY2FsaG9zdDo1MDQxIiwiYXVkIjoiaHR0cHM6Ly9sb2NhbGhvc3Q6NTA0MSJ9.lmQypwwCCOmqbdHK811VFXsP1Or__YE1W7Od0dEewVw
 
 ### Register new user
 # Register
@@ -45,6 +45,11 @@ Accept: application/json
 GET {{HostAddress}}/post/?limit=8&author={{UsernameOther}}
 Accept: application/json
 
+### Get posts 2
+# GetPosts2
+GET {{HostAddress}}/post/?limit=8&author={{UsernameValid}}
+Accept: application/json
+
 ### Create posts
 # CreatePost
 POST {{HostAddress}}/post
@@ -55,3 +60,10 @@ Authorization: Bearer {{TokenValid}}
 {
     "Content": "This my other post.\n\n#newpost #test #tester"
 }
+
+### Delete posts
+# DeletePost
+DELETE {{HostAddress}}/post/01a0af30cb8242eb
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{TokenValid}}

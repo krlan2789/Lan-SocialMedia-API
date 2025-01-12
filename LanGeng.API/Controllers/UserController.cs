@@ -26,8 +26,29 @@ namespace LanGeng.API.Controllers
             dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
         }
 
+        [HttpGet("profile/{Username}")]
+        public async Task<IResult> GetProfile(string Username)
+        {
+            try
+            {
+                User? currentUser = await dbContext.Users.Where(user => user.Username == Username).FirstOrDefaultAsync();
+                if (currentUser != null)
+                {
+                    return Results.Ok(new ResponseData<ResponseUserDto>("Success", currentUser.ToResponseDto()));
+                }
+                else
+                {
+                    return Results.NotFound(new ResponseData<object>("User not found"));
+                }
+            }
+            catch (Exception e)
+            {
+                return Results.BadRequest(new ResponseData<object>(e.Message));
+            }
+        }
+
         [Authorize]
-        [HttpGet("profile", Name = nameof(GetProfileSelf))]
+        [HttpGet("profile")]
         public async Task<IResult> GetProfileSelf()
         {
             try
@@ -48,15 +69,54 @@ namespace LanGeng.API.Controllers
             }
         }
 
-        [HttpGet("profile/{Username}", Name = nameof(GetProfile))]
-        public async Task<IResult> GetProfile(string Username)
+        [Authorize]
+        [HttpPost("profile")]
+        public async Task<IResult> CreateProfile([FromBody] CreateUserProfileDto dto)
         {
             try
             {
-                User? currentUser = await dbContext.Users.Where(user => user.Username == Username).FirstOrDefaultAsync();
+                User? currentUser = await _tokenService.GetUser(HttpContext);
                 if (currentUser != null)
                 {
-                    return Results.Ok(new ResponseData<ResponseUserDto>("Success", currentUser.ToResponseDto()));
+                    if (currentUser.Profile != null)
+                    {
+                        dbContext.Entry(currentUser.Profile).CurrentValues.SetValues(dto.ToEntity());
+                        return Results.Ok(new ResponseData<object>("Updated Successfully"));
+                    }
+                    else
+                    {
+                        return Results.BadRequest(new ResponseData<object>("User profile not found"));
+                    }
+                }
+                else
+                {
+                    return Results.NotFound(new ResponseData<object>("User not found"));
+                }
+            }
+            catch (Exception e)
+            {
+                return Results.BadRequest(new ResponseData<object>(e.Message));
+            }
+        }
+
+        [Authorize]
+        [HttpPut("profile")]
+        public async Task<IResult> UpdateProfile([FromBody] UpdateUserProfileDto dto)
+        {
+            try
+            {
+                User? currentUser = await _tokenService.GetUser(HttpContext);
+                if (currentUser != null)
+                {
+                    if (currentUser.Profile != null)
+                    {
+                        dbContext.Entry(currentUser.Profile).CurrentValues.SetValues(dto.ToEntity());
+                        return Results.Ok(new ResponseData<object>("Updated Successfully"));
+                    }
+                    else
+                    {
+                        return Results.BadRequest(new ResponseData<object>("User profile not found"));
+                    }
                 }
                 else
                 {
