@@ -29,9 +29,9 @@ public class SocialMediaDatabaseContext(DbContextOptions<SocialMediaDatabaseCont
         {
             entity.HasIndex(e => e.Email).IsUnique();
             entity.HasIndex(e => e.Username).IsUnique();
-            entity.HasOne(e => e.Profile).WithOne(r => r.User).HasForeignKey<UserProfile>(r => r.UserId);
-            entity.HasOne(e => e.AccountStatus).WithOne(r => r.User).HasForeignKey<UserStatus>(r => r.UserId);
-            entity.HasMany(e => e.UserTokens).WithOne(r => r.User).HasForeignKey(r => r.UserId);
+            entity.HasOne(e => e.Profile).WithOne(r => r.User).HasForeignKey<UserProfile>(r => r.UserId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.AccountStatus).WithOne(r => r.User).HasForeignKey<UserStatus>(r => r.UserId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasMany(e => e.UserTokens).WithOne(r => r.User).HasForeignKey(r => r.UserId).OnDelete(DeleteBehavior.Cascade);
             // entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
             // entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETDATE()");
         });
@@ -54,14 +54,14 @@ public class SocialMediaDatabaseContext(DbContextOptions<SocialMediaDatabaseCont
         modelBuilder.Entity<UserToken>(entity =>
         {
             entity.HasIndex(e => e.Token).IsUnique();
-            entity.HasOne(e => e.User).WithMany(r => r.UserTokens).HasForeignKey(r => r.UserId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.User).WithMany(r => r.UserTokens).HasForeignKey(r => r.UserId);
         });
 
         // UserVerifications Table
         modelBuilder.Entity<UserVerification>(entity =>
         {
             entity.Property(e => e.VerificationType).HasConversion<byte>();
-            entity.HasOne(e => e.User).WithMany().HasForeignKey(r => r.UserId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.User).WithMany().HasForeignKey(r => r.UserId);
         });
 
         // Groups Table

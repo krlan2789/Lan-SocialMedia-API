@@ -85,7 +85,7 @@ public class TokenService
     public async Task<User?> GetUser(HttpContext httpContext)
     {
         var username = await GetUsername(httpContext);
-        User? currentUser = await DbContext.Users.Where(user => user.Username == username).FirstOrDefaultAsync();
+        User? currentUser = await DbContext.Users.Include(u => u.Profile).Where(user => user.Username == username).AsTracking().FirstOrDefaultAsync();
         return currentUser;
     }
 

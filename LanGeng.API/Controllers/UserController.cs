@@ -26,6 +26,30 @@ namespace LanGeng.API.Controllers
             dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
         }
 
+        [Authorize]
+        [HttpDelete()]
+        public async Task<IResult> Delete()
+        {
+            try
+            {
+                var currentUser = await _tokenService.GetUser(HttpContext);
+                if (currentUser != null)
+                {
+                    await dbContext.UserProfiles.Where(up => up.UserId == currentUser.Id).AsTracking().ExecuteDeleteAsync();
+                    await dbContext.Users.Where(u => u.Id == currentUser.Id).AsTracking().ExecuteDeleteAsync();
+                    return Results.Ok(new ResponseData<ResponseUserDto>("Success", currentUser.ToResponseDto()));
+                }
+                else
+                {
+                    return Results.NotFound(new ResponseData<object>("User not found"));
+                }
+            }
+            catch (Exception e)
+            {
+                return Results.BadRequest(new ResponseData<object>(e.Message));
+            }
+        }
+
         [HttpGet("profile/{Username}")]
         public async Task<IResult> GetProfile(string Username)
         {
@@ -78,14 +102,16 @@ namespace LanGeng.API.Controllers
                 User? currentUser = await _tokenService.GetUser(HttpContext);
                 if (currentUser != null)
                 {
-                    if (currentUser.Profile != null)
+                    if (currentUser.Profile == null)
                     {
-                        dbContext.Entry(currentUser.Profile).CurrentValues.SetValues(dto.ToEntity());
-                        return Results.Ok(new ResponseData<object>("Updated Successfully"));
+                        var profile = dto.ToEntity();
+                        dbContext.UserProfiles.Add(profile);
+                        await dbContext.SaveChangesAsync();
+                        return Results.Ok(new ResponseData<object>("Profile Created Successfully"));
                     }
                     else
                     {
-                        return Results.BadRequest(new ResponseData<object>("User profile not found"));
+                        return Results.BadRequest(new ResponseData<object>("Profile Already Created"));
                     }
                 }
                 else
