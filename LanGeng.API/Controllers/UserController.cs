@@ -8,7 +8,6 @@ using LanGeng.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Org.BouncyCastle.Asn1;
 
 namespace LanGeng.API.Controllers
 {

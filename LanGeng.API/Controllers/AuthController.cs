@@ -7,7 +7,6 @@ using LanGeng.API.Mapping;
 using LanGeng.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.EntityFrameworkCore;
 
 namespace LanGeng.API.Controllers
