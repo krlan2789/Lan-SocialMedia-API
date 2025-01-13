@@ -2,6 +2,7 @@ using LanGeng.API.Data;
 using LanGeng.API.Dtos;
 using LanGeng.API.Entities;
 using LanGeng.API.Enums;
+using LanGeng.API.Helper;
 using LanGeng.API.Mapping;
 using LanGeng.API.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -100,79 +101,47 @@ namespace LanGeng.API.Controllers
                 await dbContext.SaveChangesAsync();
 
                 // Save User verification
-                // User? currentUser = await dbContext.Users.Where(user => user.Email == userDto.Email).FirstAsync();
-                dbContext.UserVerifications.Add(new UserVerification
+                var userVerifyToken = new UserVerificationToken
                 {
                     UserId = currentUser.Id,
                     VerificationType = VerificationTypeEnum.Register,
-                    Email = currentUser.Email
-                });
+                    Email = currentUser.Email,
+                    Token = SlugHelper.Create(currentUser.Username)
+                };
+                dbContext.UserVerificationTokens.Add(userVerifyToken);
+                await dbContext.SaveChangesAsync();
 
                 // Save User Account Status
-                dbContext.UserStatuses.Add(new UserStatus
+                var userStatus = new UserStatus
                 {
                     UserId = currentUser.Id,
                     AccountStatus = AccountStatusEnum.Unverified
-                });
-                var result = await dbContext.SaveChangesAsync();
+                };
+                dbContext.UserStatuses.Add(userStatus);
+                await dbContext.SaveChangesAsync();
+
+                // Generate Token
+                var userToken = new UserToken
+                {
+                    Token = _tokenService.GenerateToken(currentUser.Username, TimeSpan.FromDays(30)),
+                    UserId = currentUser.Id,
+                    ExpiresDate = DateTime.Now.Add(TimeSpan.FromDays(30))
+                };
+                dbContext.UserTokens.Add(userToken);
+                await dbContext.SaveChangesAsync();
 
                 // Send verification code
                 var request = HttpContext.Request;
-                var verificationLink = $"{request.Scheme}://{request.Host}/api/auth/verifyemail?u={currentUser.Id}&t={"token"}";
-                await _emailService.SendEmailAsync(currentUser.Email, "Email Verification", $"Please verify your email by clicking the following link:\n\n{verificationLink}");
-
-                // Generate Token
-                var token = _tokenService.GenerateToken(currentUser.Username, TimeSpan.FromDays(30));
-                await dbContext.UserTokens.Where(ut => ut.UserId == currentUser.Id).ExecuteDeleteAsync();
-                dbContext.UserTokens.Add(new UserToken
-                {
-                    Token = token,
-                    UserId = currentUser.Id,
-                    ExpiresDate = DateTime.Now.Add(TimeSpan.FromDays(30))
-                });
-                await dbContext.SaveChangesAsync();
-                Response.Headers.Append("Authorization", $"Bearer {token}");
-                return currentUser is null && result > 0 ? Results.NotFound() : Results.Ok(
-                    new ResponseData<ResponseUserDto>("Registration Successfully", token)
+                var verificationLink = $"{request.Scheme}://{request.Host}/api/auth/verify?u={userToken.Token}&t={userVerifyToken.Token}&s={(byte)userVerifyToken.VerificationType}";
+                await _emailService.SendAsync(
+                    currentUser.Email,
+                    "Email Verification",
+                    $"Please verify your email by clicking the following link:\n\n<a href=\"{verificationLink}\">Verify</a>"
                 );
-            }
-            catch (Exception e)
-            {
-                return Results.BadRequest(new ResponseData<object>(e.Message));
-            }
-        }
 
-        [Authorize]
-        [HttpPatch("verify")]
-        public async Task<IResult> PatchVerifyAccount([FromBody] VerifyAccountDto dto)
-        {
-            try
-            {
-                // Make sure the user is authenticated
-                var verifietAt = DateTime.Now;
-                var currentUser = await _tokenService.GetUser(HttpContext);
-                if (currentUser == null) return Results.Unauthorized();
-
-                // Update Verification Status
-                UserVerification? userVerification = await dbContext.UserVerifications.Where(uv =>
-                    uv.Code == dto.VerificationCode &&
-                    uv.UserId == currentUser.Id &&
-                    uv.VerificationType == VerificationTypeEnum.Register
-                ).FirstAsync() ?? throw new Exception("Invalid Verification Code");
-                bool status = userVerification.ExpiresDate > verifietAt;
-                if (!status) throw new Exception("Verification Code Expired");
-                dbContext.Entry(userVerification).CurrentValues.SetValues(new { VerifiedAt = verifietAt });
-                var result = await dbContext.SaveChangesAsync();
-
-                // Update User Account Status
-                UserStatus? userStatus = await dbContext.UserStatuses.Where(uv =>
-                    uv.UserId == currentUser.Id
-                ).FirstAsync() ?? throw new Exception("Invalid Account Status");
-                dbContext.Entry(userStatus).CurrentValues.SetValues(new { AcconutStatus = AccountStatusEnum.Verified });
-                result = await dbContext.SaveChangesAsync();
-
-                return result > 0 ? throw new Exception("Verify Account Failed") : Results.Ok(
-                    new ResponseData<ResponseUserDto>("Verified Account Successfully")
+                Response.Headers.Append("Authorization", $"Bearer {userToken.Token}");
+                return currentUser is null ? Results.NotFound() : Results.Ok(
+                    new ResponseData<ResponseUserDto>("Registration Successfully", userToken.Token)
                 );
             }
             catch (Exception e)

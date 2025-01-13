@@ -8,6 +8,7 @@ public class SocialMediaDatabaseContext(DbContextOptions<SocialMediaDatabaseCont
 {
     public DbSet<User> Users => Set<User>();
     public DbSet<UserVerification> UserVerifications => Set<UserVerification>();
+    public DbSet<UserVerificationToken> UserVerificationTokens => Set<UserVerificationToken>();
     public DbSet<UserToken> UserTokens => Set<UserToken>();
     public DbSet<UserStatus> UserStatuses => Set<UserStatus>();
     public DbSet<UserSessionLog> UserSessionLogs => Set<UserSessionLog>();
@@ -60,6 +61,14 @@ public class SocialMediaDatabaseContext(DbContextOptions<SocialMediaDatabaseCont
         // UserVerifications Table
         modelBuilder.Entity<UserVerification>(entity =>
         {
+            entity.Property(e => e.VerificationType).HasConversion<byte>();
+            entity.HasOne(e => e.User).WithMany().HasForeignKey(r => r.UserId);
+        });
+
+        // UserVerifications Table
+        modelBuilder.Entity<UserVerificationToken>(entity =>
+        {
+            entity.HasIndex(e => e.Token).IsUnique();
             entity.Property(e => e.VerificationType).HasConversion<byte>();
             entity.HasOne(e => e.User).WithMany().HasForeignKey(r => r.UserId);
         });

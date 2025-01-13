@@ -6,7 +6,7 @@ namespace LanGeng.API.Helper;
 
 public static class SlugHelper
 {
-    public static string Create(string phrase)
+    public static string Create(string phrase = "")
     {
         int maxLength = 16;
         string str = RemoveAccents(phrase).ToLower();

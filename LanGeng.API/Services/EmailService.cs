@@ -14,7 +14,7 @@ public class EmailService
         _logger = logger;
     }
 
-    public async Task<string?> SendEmailAsync(string toEmail, string subject, string message)
+    public async Task<string?> SendAsync(string toEmail, string subject, string message)
     {
         try
         {

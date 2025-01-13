@@ -6,4 +6,6 @@ public enum VerificationTypeEnum : byte
     UsernameChanges = 10,
     PasswordChanges = 20,
     PasswordReset = 21,
+    AccountDeactivation = 40,
+    AccountDeletion = 41,
 }

@@ -2,7 +2,8 @@ namespace LanGeng.API.Enums;
 
 public enum ReactionTypeEnum
 {
-    Like = 0,
-    Funny = 1,
-    Insightful = 2,
+    Like = 1,
+    Funny = 2,
+    Insightful = 3,
+    Sad = 4,
 }

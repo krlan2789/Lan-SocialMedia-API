@@ -64,6 +64,20 @@ public class TokenService
         return tokenHandler.ValidateToken(token, validationParameters, out _);
     }
 
+    public string? GetToken(HttpContext httpContext)
+    {
+        try
+        {
+            string token = "" + httpContext.Request.Headers["Authorization"].ToString().Split(" ")[1];
+            _logger.LogInformation("TokenService: Token={Token}", token);
+            return token;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
     public async Task<string?> GetUsername(HttpContext httpContext)
     {
         try

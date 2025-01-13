@@ -148,7 +148,7 @@ namespace LanGeng.API.Controllers
                 var posts = await query
                     .Skip(start)
                     .Take(limit)
-                    .OrderBy(p => p.UpdatedAt)
+                    .OrderByDescending(p => p.UpdatedAt)
                     .ToListAsync();
                 var postsDto = posts.Select(post => post.ToDto()).ToList();
                 return Results.Ok(new ResponseData<ResponsePostsDto>(
