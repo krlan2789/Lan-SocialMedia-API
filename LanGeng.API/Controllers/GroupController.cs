@@ -127,7 +127,7 @@ namespace LanGeng.API.Controllers
         }
 
         [Authorize]
-        [HttpPost("g/{Slug}")]
+        [HttpPost("join/{Slug}")]
         public async Task<IResult> RequestJoin(string Slug)
         {
             try
@@ -161,7 +161,7 @@ namespace LanGeng.API.Controllers
         }
 
         [Authorize]
-        [HttpPatch("m/{Slug}/{Status}")]
+        [HttpPatch("join/{Slug}/{Status}")]
         public async Task<IResult> UpdateMemberStatus(string Slug, GroupMemberStatusEnum Status)
         {
             try
