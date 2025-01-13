@@ -73,7 +73,7 @@ namespace LanGeng.API.Controllers
         }
 
         [HttpGet("verify")]
-        public async Task<IResult> PatchVerifyToken([FromQuery] VerifyTokenDto dto)
+        public async Task<IResult> VerifyToken([FromQuery] VerifyTokenDto dto)
         {
             try
             {
@@ -139,7 +139,7 @@ namespace LanGeng.API.Controllers
 
         [Authorize]
         [HttpPatch("verify")]
-        public async Task<IResult> PatchVerifyCode([FromBody] VerifyCodeDto dto)
+        public async Task<IResult> VerifyCode([FromBody] VerifyCodeDto dto)
         {
             try
             {
