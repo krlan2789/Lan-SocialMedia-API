@@ -4,7 +4,7 @@ namespace LanGeng.API.Dtos;
 
 public record class VerifyTokenDto
 (
-    string U,
+    VerificationTypeEnum? S,
     string T,
-    VerificationTypeEnum? S
+    string U
 );
