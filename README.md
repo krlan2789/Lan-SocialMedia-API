@@ -20,9 +20,63 @@ ASP.NET Project - Social Media REST API
 | 10  | Invite Event Attendance |                    |
 |     |                         |                    |
 
-## 1.2. **Database**
+## 1.2. **Type Enum**
 
-### 1.2.1. Table Users
+### 1.2.1. AccountStatusEnum
+
+| Code | Label      |
+| ---- | ---------- |
+| 1    | Unverified |
+| 2    | Verified   |
+| 3    | Suspend    |
+| 4    | Inactive   |
+|      |            |
+
+### 1.2.2. GroupMemberStatusEnum
+
+| Code | Label    |
+| ---- | -------- |
+| 1    | Request  |
+| 2    | Approved |
+| 3    | Rejected |
+| 4    | Left     |
+| 5    | Removed  |
+|      |          |
+
+### 1.2.3. PrivacyTypeEnum
+
+| Code | Label     |
+| ---- | --------- |
+| 1    | Public    |
+| 2    | Protected |
+| 3    | Private   |
+|      |           |
+
+### 1.2.4. ReactionTypeEnum
+
+| Code | Label      |
+| ---- | ---------- |
+| 1    | Like       |
+| 2    | Funny      |
+| 3    | Insightful |
+| 4    | Sad        |
+|      |            |
+
+### 1.2.5. VerificationTypeEnum
+
+| Code | Label               |
+| ---- | ------------------- |
+| 1    | Register            |
+| 10   | UsernameChanges     |
+| 20   | PasswordChanges     |
+| 21   | PasswordReset       |
+| 40   | AccountDeactivation |
+| 41   | AccountDeletion     |
+|      |                     |
+
+## 1.3. **Database**
+
+### 1.3.1. Table Users
 
 |     | Name         | Type     |                                   |
 | --- | ------------ | -------- | --------------------------------- |
@@ -34,7 +88,7 @@ ASP.NET Project - Social Media REST API
 |     | CreatedAt    | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
 |     | UpdatedAt    | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
 
-### 1.2.2. Table UserProfiles
+### 1.3.2. Table UserProfiles
 
 |     | Name         | Type     |                                    |
 | --- | ------------ | -------- | ---------------------------------- |
@@ -49,17 +103,16 @@ ASP.NET Project - Social Media REST API
 |     | CreatedAt    | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss'  |
 |     | UpdatedAt    | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss'  |
 
-### 1.2.3. Table UserStatus
+### 1.3.3. Table UserStatus
 
-|     | Name          | Type     |                                           |
-| --- | ------------- | -------- | ----------------------------------------- |
-| PK  | **Id**        | int      | Auto-increament                           |
-|     | AccountStatus | byte     | Enum(1=Unverified, 2=Verified, 3=Suspend, |
-|     |               |          | 4=Inactive)                               |
-| FK  | **UserId**    | int      |                                           |
-|     | CreatedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss'         |
+|     | Name          | Type     |                                   |
+| --- | ------------- | -------- | --------------------------------- |
+| PK  | **Id**        | int      | Auto-increament                   |
+|     | AccountStatus | byte     | Enum(AccountStatusEnum)           |
+| FK  | **UserId**    | int      |                                   |
+|     | CreatedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
 
-### 1.2.4. Table UserTokens
+### 1.3.4. Table UserTokens
 
 |     | Name        | Type     |                                   |
 | --- | ----------- | -------- | --------------------------------- |
@@ -70,14 +123,13 @@ ASP.NET Project - Social Media REST API
 | FK  | **UserId**  | int      |                                   |
 |     | CreatedAt   | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
 
-### 1.2.5. Table UserVerifications
+### 1.3.5. Table UserVerifications
 
 |     | Name             | Type     |                                             |
 | --- | ---------------- | -------- | ------------------------------------------- |
 | PK  | **Id**           | int      | Auto-increament                             |
 |     | Code             | string   | Length(6)                                   |
-|     | VerificationType | byte     | Enum(1=Register, 10=UsernameChanges,        |
-|     |                  |          | 20=PasswordChanges, 21=PasswordReset)       |
+|     | VerificationType | byte     | Enum(VerificationTypeEnum)                  |
 |     | PhoneNumber      | string   | Length(32), nullable                        |
 |     | Email            | string   | Length(128), nullable                       |
 |     | ExpiresDate      | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss'           |
@@ -85,7 +137,20 @@ ASP.NET Project - Social Media REST API
 | FK  | **UserId**       | int      |                                             |
 |     | CreatedAt        | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss'           |
 
-### 1.2.6. Table UserSessionLogs
+### 1.3.6. Table UserVerificationTokens
+
+|     | Name             | Type     |                                             |
+| --- | ---------------- | -------- | ------------------------------------------- |
+| PK  | **Id**           | int      | Auto-increament                             |
+|     | Token            | string   |                                             |
+|     | VerificationType | byte     | Enum(VerificationTypeEnum)                  |
+|     | Email            | string   | Length(128), nullable                       |
+|     | ExpiresDate      | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss'           |
+|     | VerifiedAt       | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss', nullable |
+| FK  | **UserId**       | int      |                                             |
+|     | CreatedAt        | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss'           |
+
+### 1.3.7. Table UserSessionLogs
 
 |     | Name       | Type     |                                   |
 | --- | ---------- | -------- | --------------------------------- |
@@ -96,21 +161,21 @@ ASP.NET Project - Social Media REST API
 | FK  | **UserId** | int      | nullable                          |
 |     | CreatedAt  | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
 
-### 1.2.7. Table Groups
+### 1.3.8. Table Groups
 
-|     | Name          | Type     |                                        |
-| --- | ------------- | -------- | -------------------------------------- |
-| PK  | **Id**        | int      | Auto-increament                        |
-|     | Name          | string   | Length(255)                            |
-|     | Slug          | string   | Length(255), unique                    |
-|     | PrivacyType   | byte     | Enum(0=Public, 1=Protected, 2=Private) |
-|     | ProfileImage  | string   | nullable                               |
-|     | Description   | string   | Length(1024), nullable                 |
-| FK  | **CreatorId** | int      |                                        |
-|     | CreatedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss'      |
-|     | UpdatedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss'      |
+|     | Name          | Type     |                                   |
+| --- | ------------- | -------- | --------------------------------- |
+| PK  | **Id**        | int      | Auto-increament                   |
+|     | Name          | string   | Length(255)                       |
+|     | Slug          | string   | Length(255), unique               |
+|     | PrivacyType   | byte     | Enum(PrivacyTypeEnum)             |
+|     | ProfileImage  | string   | nullable                          |
+|     | Description   | string   | Length(1024), nullable            |
+| FK  | **CreatorId** | int      |                                   |
+|     | CreatedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
+|     | UpdatedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
 
-### 1.2.8. Table GroupMembers
+### 1.3.9. Table GroupMembers
 
 |     | Name         | Type     |                                             |
 | --- | ------------ | -------- | ------------------------------------------- |
@@ -124,7 +189,7 @@ ASP.NET Project - Social Media REST API
 |     | CreatedAt    | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss'           |
 |     | UpdatedAt    | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss'           |
 
-### 1.2.9. Table UserPosts
+### 1.3.10. Table UserPosts
 
 |     | Name                | Type     |                                   |
 | --- | ------------------- | -------- | --------------------------------- |
@@ -138,7 +203,7 @@ ASP.NET Project - Social Media REST API
 |     | CreatedAt           | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
 |     | UpdatedAt           | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
 
-### 1.2.10. Table Hashtags
+### 1.3.11. Table Hashtags
 
 |     | Name      | Type     |                                   |
 | --- | --------- | -------- | --------------------------------- |
@@ -146,7 +211,7 @@ ASP.NET Project - Social Media REST API
 |     | Tag       | string   | Length(64), unique                |
 |     | CreatedAt | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
 
-### 1.2.11. Table PostHashtags
+### 1.3.12. Table PostHashtags
 
 |     | Name          | Type     |                                   |
 | --- | ------------- | -------- | --------------------------------- |
@@ -155,7 +220,7 @@ ASP.NET Project - Social Media REST API
 | FK  | **HashtagId** | int      |                                   |
 |     | CreatedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
 
-### 1.2.12. Table PostComments
+### 1.3.13. Table PostComments
 
 |     | Name          | Type     |                                   |
 | --- | ------------- | -------- | --------------------------------- |
@@ -167,40 +232,29 @@ ASP.NET Project - Social Media REST API
 |     | CreatedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
 |     | UpdatedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
 
-### 1.2.13. Table PostReactions
+### 1.3.14. Table PostReactions
 
 |     | Name       | Type     |                                   |
 | --- | ---------- | -------- | --------------------------------- |
 | PK  | **Id**     | int      | Auto-increament                   |
-|     | Type       | byte     |                                   |
+|     | Type       | byte     | Enum(ReactionTypeEnum)            |
 | FK  | **PostId** | int      |                                   |
 | FK  | **UserId** | int      |                                   |
 |     | CreatedAt  | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
 |     | UpdatedAt  | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
 
-### 1.2.14. Table CommentReactions
+### 1.3.15. Table CommentReactions
 
 |     | Name          | Type     |                                   |
 | --- | ------------- | -------- | --------------------------------- |
 | PK  | **Id**        | int      | Auto-increament                   |
-|     | Type          | byte     |                                   |
+|     | Type          | byte     | Enum(ReactionTypeEnum)            |
 | FK  | **CommentId** | int      |                                   |
 | FK  | **UserId**    | int      |                                   |
 |     | CreatedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
 |     | UpdatedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
 
-### 1.2.15. Table PostReactions
-
-|     | Name       | Type     |                                   |
-| --- | ---------- | -------- | --------------------------------- |
-| PK  | **Id**     | int      | Auto-increament                   |
-|     | Type       | byte     |                                   |
-| FK  | **PostId** | int      |                                   |
-| FK  | **UserId** | int      |                                   |
-|     | CreatedAt  | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
-|     | UpdatedAt  | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
-
-### 1.2.16. Table UserEvents
+### 1.3.16. Table UserEvents
 
 |     | Name          | Type     |                                   |
 | --- | ------------- | -------- | --------------------------------- |
