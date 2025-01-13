@@ -161,7 +161,7 @@ namespace LanGeng.API.Controllers
         }
 
         [Authorize]
-        [HttpPatch("g/{Slug}/{Status}")]
+        [HttpPatch("m/{Slug}/{Status}")]
         public async Task<IResult> UpdateMemberStatus(string Slug, GroupMemberStatusEnum Status)
         {
             try
