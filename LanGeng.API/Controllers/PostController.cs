@@ -34,7 +34,7 @@ namespace LanGeng.API.Controllers
             {
                 UserPost? post = await dbContext.UserPosts
                     .IncludeAll()
-                    .Where(up => up.Slug == Slug)
+                    .Where(e => e.Slug == Slug)
                     .FirstOrDefaultAsync();
                 return post == null ? Results.NotFound() : Results.Ok(new ResponseData<UserPostFullDto>("Success", post.ToFullDto()));
             }
@@ -58,33 +58,35 @@ namespace LanGeng.API.Controllers
                     while (tryCount < 16)
                     {
                         post = dto.ToEntity(currentUser.Id);
-                        var posts = await dbContext.UserPosts.Where(up => up.Slug == post.Slug).AsTracking().ToListAsync();
+                        var posts = await dbContext.UserPosts.Where(e => e.Slug == post.Slug).AsTracking().ToListAsync();
                         tryCount++;
                         if (posts == null || posts.Count <= 0) break;
                         else post = null;
                     }
                     if (post != null) dbContext.UserPosts.Add(post);
                     else throw new Exception("Failed to create post, try again later.");
-                    await dbContext.SaveChangesAsync();
                     // Save hashtag in post
                     string[] tags = ("" + dto.Content).ExtractHashtags();
                     if (tags.Length > 0)
                     {
+                        var hashtags = new List<Hashtag>();
+                        var postTags = new List<PostHashtag>();
                         foreach (string tag in tags)
                         {
-                            Hashtag? hashtag = await dbContext.Hashtags.Where(h => h.Tag == tag).AsTracking().FirstOrDefaultAsync();
+                            Hashtag? hashtag = await dbContext.Hashtags.Where(e => e.Tag == tag).AsTracking().FirstOrDefaultAsync();
                             if (hashtag == null)
                             {
                                 hashtag = new Hashtag { Tag = tag.Replace("#", "") };
-                                dbContext.Hashtags.Add(hashtag);
-                                await dbContext.SaveChangesAsync();
+                                hashtags.Add(hashtag);
                             }
                             PostHashtag? postTag = new() { HashtagId = hashtag.Id, PostId = post.Id };
-                            dbContext.PostHashtags.Add(postTag);
-                            await dbContext.SaveChangesAsync();
+                            postTags.AddRange(postTag);
                         }
+                        dbContext.Hashtags.AddRange(hashtags);
+                        dbContext.PostHashtags.AddRange(postTags);
                     }
-                    return Results.Ok(new ResponseData<UserPostDto>("Post Created Successfully"));
+                    var results = await dbContext.SaveChangesAsync();
+                    return results > 0 ? Results.Ok(new ResponseData<UserPostDto>("Post Created Successfully")) : throw new Exception("Failed to creating post");
                 }
                 else
                 {
@@ -103,11 +105,16 @@ namespace LanGeng.API.Controllers
         {
             try
             {
+                var DeletedAt = DateTime.Now;
                 var currentUser = await _tokenService.GetUser(HttpContext);
                 if (currentUser != null)
                 {
-                    await dbContext.UserPosts.Where(post => post.Slug == Slug).AsTracking().ExecuteDeleteAsync();
-                    return Results.Ok(new ResponseData<UserPostDto>("Post deleted Successfully"));
+                    var post = await dbContext.UserPosts
+                        .Where(e => e.Slug == Slug).AsTracking().FirstOrDefaultAsync()
+                        ?? throw new Exception("Deletion Failed");
+                    dbContext.Entry(post).CurrentValues.SetValues(new { DeletedAt });
+                    await dbContext.SaveChangesAsync();
+                    return Results.Ok(new ResponseData<object>("Post Deleted Successfully"));
                 }
                 else
                 {
@@ -132,14 +139,14 @@ namespace LanGeng.API.Controllers
                 string group = $"%{filters.Group}%".ToLower();
                 var query = dbContext.UserPosts
                     .IncludeAll()
-                    .Where(up =>
-                        (string.IsNullOrEmpty(filters.Tags) || up.Hashtags.Any(t => tags.Contains(t.Tag))) &&
-                        (string.IsNullOrEmpty(filters.Author) || EF.Functions.Like(up.Author!.Username.ToLower(), author) || EF.Functions.Like(up.Author!.Fullname.ToLower(), author)) &&
-                        (string.IsNullOrEmpty(filters.Group) || (up.Group != null && (EF.Functions.Like(up.Group.Slug.ToLower(), group) || EF.Functions.Like(up.Group.Name.ToLower(), group)))) &&
+                    .Where(e =>
+                        (string.IsNullOrEmpty(filters.Tags) || e.Hashtags.Any(t => tags.Contains(t.Tag))) &&
+                        (string.IsNullOrEmpty(filters.Author) || EF.Functions.Like(e.Author!.Username.ToLower(), author) || EF.Functions.Like(e.Author!.Fullname.ToLower(), author)) &&
+                        (string.IsNullOrEmpty(filters.Group) || (e.Group != null && (EF.Functions.Like(e.Group.Slug.ToLower(), group) || EF.Functions.Like(e.Group.Name.ToLower(), group)))) &&
                         (
-                            string.IsNullOrEmpty(filters.Keyword) || EF.Functions.Like(("" + up.Content).ToLower(), keyword) ||
-                            up.Author == null || EF.Functions.Like(up.Author.Username.ToLower(), keyword) || EF.Functions.Like(up.Author.Fullname.ToLower(), keyword) ||
-                            up.Group == null || EF.Functions.Like(up.Group.Slug.ToLower(), keyword) || EF.Functions.Like(up.Group.Name.ToLower(), keyword)
+                            string.IsNullOrEmpty(filters.Keyword) || EF.Functions.Like(("" + e.Content).ToLower(), keyword) ||
+                            e.Author == null || EF.Functions.Like(e.Author.Username.ToLower(), keyword) || EF.Functions.Like(e.Author.Fullname.ToLower(), keyword) ||
+                            e.Group == null || EF.Functions.Like(e.Group.Slug.ToLower(), keyword) || EF.Functions.Like(e.Group.Name.ToLower(), keyword)
                         )
                     );
                 var totalPosts = await query.CountAsync();
@@ -150,7 +157,7 @@ namespace LanGeng.API.Controllers
                     .Take(limit)
                     .OrderByDescending(p => p.UpdatedAt)
                     .ToListAsync();
-                var postsDto = posts.Select(post => post.ToDto()).ToList();
+                var postsDto = posts.Select(e => e.ToDto()).ToList();
                 return Results.Ok(new ResponseData<ResponsePostsDto>(
                     "Success",
                     new ResponsePostsDto(

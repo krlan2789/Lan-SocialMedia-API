@@ -30,6 +30,7 @@ ASP.NET Project - Social Media REST API
 | 2    | Verified   |
 | 3    | Suspend    |
 | 4    | Inactive   |
+| 5    | Deleted    |
 |      |            |
 
 ### 1.2.2. GroupMemberStatusEnum
@@ -78,15 +79,16 @@ ASP.NET Project - Social Media REST API
 
 ### 1.3.1. Table Users
 
-|     | Name         | Type     |                                   |
-| --- | ------------ | -------- | --------------------------------- |
-| PK  | **Id**       | int      | Auto-increament                   |
-|     | Fullname     | string   | Length(255)                       |
-|     | Username     | string   | Length(64), unique                |
-|     | Email        | string   | Length(128), unique               |
-|     | PasswordHash | string   | Length(255)                       |
-|     | CreatedAt    | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
-|     | UpdatedAt    | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
+|     | Name         | Type     |                                             |
+| --- | ------------ | -------- | ------------------------------------------- |
+| PK  | **Id**       | int      | Auto-increament                             |
+|     | Fullname     | string   | Length(255)                                 |
+|     | Username     | string   | Length(64), unique                          |
+|     | Email        | string   | Length(128), unique                         |
+|     | PasswordHash | string   | Length(255)                                 |
+|     | DeletedAt    | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss', nullable |
+|     | CreatedAt    | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss'           |
+|     | UpdatedAt    | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss'           |
 
 ### 1.3.2. Table UserProfiles
 
@@ -163,17 +165,18 @@ ASP.NET Project - Social Media REST API
 
 ### 1.3.8. Table Groups
 
-|     | Name          | Type     |                                   |
-| --- | ------------- | -------- | --------------------------------- |
-| PK  | **Id**        | int      | Auto-increament                   |
-|     | Name          | string   | Length(255)                       |
-|     | Slug          | string   | Length(255), unique               |
-|     | PrivacyType   | byte     | Enum(PrivacyTypeEnum)             |
-|     | ProfileImage  | string   | nullable                          |
-|     | Description   | string   | Length(1024), nullable            |
-| FK  | **CreatorId** | int      |                                   |
-|     | CreatedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
-|     | UpdatedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
+|     | Name          | Type     |                                             |
+| --- | ------------- | -------- | ------------------------------------------- |
+| PK  | **Id**        | int      | Auto-increament                             |
+|     | Name          | string   | Length(255)                                 |
+|     | Slug          | string   | Length(255), unique                         |
+|     | PrivacyType   | byte     | Enum(PrivacyTypeEnum)                       |
+|     | ProfileImage  | string   | nullable                                    |
+|     | Description   | string   | Length(1024), nullable                      |
+| FK  | **CreatorId** | int      |                                             |
+|     | DeletedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss', nullable |
+|     | CreatedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss'           |
+|     | UpdatedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss'           |
 
 ### 1.3.9. Table GroupMembers
 
@@ -191,17 +194,18 @@ ASP.NET Project - Social Media REST API
 
 ### 1.3.10. Table UserPosts
 
-|     | Name                | Type     |                                   |
-| --- | ------------------- | -------- | --------------------------------- |
-| PK  | **Id**              | int      | Auto-increament                   |
-|     | Slug                | string   | Length(255), unique               |
-|     | CommentAvailability | bool     | default(true)                     |
-|     | Content             | string   | nullable                          |
-|     | Media               | string[] | nullable                          |
-| FK  | **AuthorId**        | int      |                                   |
-| FK  | **GroupId**         | int      | nullable                          |
-|     | CreatedAt           | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
-|     | UpdatedAt           | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
+|     | Name                | Type     |                                             |
+| --- | ------------------- | -------- | ------------------------------------------- |
+| PK  | **Id**              | int      | Auto-increament                             |
+|     | Slug                | string   | Length(255), unique                         |
+|     | CommentAvailability | bool     | default(true)                               |
+|     | Content             | string   | nullable                                    |
+|     | Media               | string[] | nullable                                    |
+| FK  | **AuthorId**        | int      |                                             |
+| FK  | **GroupId**         | int      | nullable                                    |
+|     | DeletedAt           | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss', nullable |
+|     | CreatedAt           | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss'           |
+|     | UpdatedAt           | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss'           |
 
 ### 1.3.11. Table Hashtags
 
@@ -222,15 +226,16 @@ ASP.NET Project - Social Media REST API
 
 ### 1.3.13. Table PostComments
 
-|     | Name          | Type     |                                   |
-| --- | ------------- | -------- | --------------------------------- |
-| PK  | **Id**        | int      | Auto-increament                   |
-|     | Content       | string   |                                   |
-| FK  | **UserId**    | int      |                                   |
-| FK  | **PostId**    | int      |                                   |
-| FK  | **CommentId** | int      | nullable                          |
-|     | CreatedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
-|     | UpdatedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
+|     | Name          | Type     |                                             |
+| --- | ------------- | -------- | ------------------------------------------- |
+| PK  | **Id**        | int      | Auto-increament                             |
+|     | Content       | string   |                                             |
+| FK  | **UserId**    | int      |                                             |
+| FK  | **PostId**    | int      |                                             |
+| FK  | **CommentId** | int      | nullable                                    |
+|     | DeletedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss', nullable |
+|     | CreatedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss'           |
+|     | UpdatedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss'           |
 
 ### 1.3.14. Table PostReactions
 

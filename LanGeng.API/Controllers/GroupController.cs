@@ -39,7 +39,7 @@ namespace LanGeng.API.Controllers
                 {
                     Group? group = await dbContext.Groups
                         .IncludeAll()
-                        .Where(g => g.Slug == Slug && g.Members != null && g.Members.Any(u => u.MemberId == currentUser.Id))
+                        .Where(e => e.Slug == Slug && e.Members != null && e.Members.Any(u => u.MemberId == currentUser.Id))
                         .FirstOrDefaultAsync();
                     return group == null ? Results.NotFound() : Results.Ok(new ResponseData<GroupDto>("Success", group.ToDto()));
                 }
@@ -47,7 +47,7 @@ namespace LanGeng.API.Controllers
                 {
                     Group? group = await dbContext.Groups
                         .IncludeAll()
-                        .Where(g => g.Slug == Slug && g.PrivacyType != PrivacyTypeEnum.Private)
+                        .Where(e => e.Slug == Slug && e.PrivacyType != PrivacyTypeEnum.Private)
                         .FirstOrDefaultAsync();
                     return group == null ? Results.NotFound() : Results.Ok(new ResponseData<GroupDto>("Success", group.ToDto()));
                 }
@@ -72,7 +72,7 @@ namespace LanGeng.API.Controllers
                     while (tryCount < 16)
                     {
                         group = dto.ToEntity(currentUser.Id);
-                        var groups = await dbContext.Groups.Where(g => g.Slug == group.Slug).AsTracking().ToListAsync();
+                        var groups = await dbContext.Groups.Where(e => e.Slug == group.Slug).AsTracking().ToListAsync();
                         tryCount++;
                         if (groups == null || groups.Count <= 0) break;
                         else group = null;
@@ -109,10 +109,23 @@ namespace LanGeng.API.Controllers
         {
             try
             {
+                var DeletedAt = DateTime.Now;
                 var currentUser = await _tokenService.GetUser(HttpContext);
                 if (currentUser != null)
                 {
-                    await dbContext.Groups.Where(g => g.Slug == Slug).AsTracking().ExecuteDeleteAsync();
+                    var group = await dbContext.Groups
+                        .Where(e => e.Slug == Slug && e.CreatorId == currentUser.Id)
+                        .AsTracking().FirstOrDefaultAsync()
+                        ?? throw new Exception("Deletion Failed");
+                    dbContext.Entry(group).CurrentValues.SetValues(new { DeletedAt });
+                    var posts = await dbContext.UserPosts
+                        .Where(e => e.GroupId != null && e.GroupId == group.Id)
+                        .AsTracking().ToListAsync() ?? [];
+                    foreach (var post in posts)
+                    {
+                        dbContext.Entry(post).CurrentValues.SetValues(new { DeletedAt });
+                    }
+                    await dbContext.SaveChangesAsync();
                     return Results.Ok(new ResponseData<UserPostDto>("Deleted Successfully"));
                 }
                 else
@@ -135,8 +148,8 @@ namespace LanGeng.API.Controllers
                 var currentUser = await _tokenService.GetUser(HttpContext);
                 if (currentUser != null)
                 {
-                    var group = await dbContext.Groups.Where(g => g.Slug == Slug && g.PrivacyType != PrivacyTypeEnum.Private).FirstOrDefaultAsync() ?? throw new Exception("Can't join to this group");
-                    var member = await dbContext.GroupMembers.Where(gm => gm.GroupId == group.Id && gm.MemberId == currentUser.Id).FirstOrDefaultAsync();
+                    var group = await dbContext.Groups.Where(e => e.Slug == Slug && e.PrivacyType != PrivacyTypeEnum.Private).FirstOrDefaultAsync() ?? throw new Exception("Can't join to this group");
+                    var member = await dbContext.GroupMembers.Where(e => e.GroupId == group.Id && e.MemberId == currentUser.Id).FirstOrDefaultAsync();
                     if (member != null) throw new Exception("You have already requested or joined to this group");
                     member = new()
                     {
@@ -169,8 +182,16 @@ namespace LanGeng.API.Controllers
                 var currentUser = await _tokenService.GetUser(HttpContext);
                 if (currentUser != null)
                 {
-                    var member = await dbContext.GroupMembers.Where(gm => gm.Slug == Slug && gm.Status == GroupMemberStatusEnum.Request).FirstOrDefaultAsync() ?? throw new Exception("Member request not available");
-                    dbContext.Entry(member).CurrentValues.SetValues(new { Status = Status, UpdatedAt = DateTime.Now, JoinedAt = Status == GroupMemberStatusEnum.Approved ? (DateTime?)DateTime.Now : null });
+                    var member = await dbContext.GroupMembers
+                        .Where(e => e.Slug == Slug && e.Status == GroupMemberStatusEnum.Request)
+                        .FirstOrDefaultAsync() ?? throw new Exception("Member request not available");
+                    dbContext.Entry(member).CurrentValues.SetValues(new
+                    {
+                        Status,
+                        UpdatedAt = DateTime.Now,
+                        JoinedAt = Status == GroupMemberStatusEnum.Approved ? (DateTime?)DateTime.Now : null,
+                        DeletedAt = Status == GroupMemberStatusEnum.Left || Status == GroupMemberStatusEnum.Removed ? (DateTime?)DateTime.Now : null,
+                    });
                     await dbContext.SaveChangesAsync();
                     return Results.Ok(new ResponseData<UserPostDto>("Updated Successfully"));
                 }

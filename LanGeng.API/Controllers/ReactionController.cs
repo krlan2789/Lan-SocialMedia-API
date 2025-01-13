@@ -34,9 +34,9 @@ namespace LanGeng.API.Controllers
                 var currentUser = await _tokenService.GetUser(HttpContext);
                 if (currentUser != null)
                 {
-                    UserPost? userPost = await dbContext.UserPosts.Where(up => up.Slug == Slug).AsNoTracking().FirstOrDefaultAsync();
+                    UserPost? userPost = await dbContext.UserPosts.Where(e => e.Slug == Slug).AsNoTracking().FirstOrDefaultAsync();
                     if (userPost == null) return Results.NotFound();
-                    PostReaction? postReaction = await dbContext.PostReactions.Where(pr => pr.UserId == currentUser.Id && pr.PostId == userPost.Id).FirstOrDefaultAsync();
+                    PostReaction? postReaction = await dbContext.PostReactions.Where(e => e.UserId == currentUser.Id && e.PostId == userPost.Id).FirstOrDefaultAsync();
                     if (postReaction == null)
                     {
                         postReaction = new() { PostId = userPost.Id, UserId = currentUser.Id, Type = Reaction };
@@ -44,10 +44,45 @@ namespace LanGeng.API.Controllers
                     }
                     else
                     {
-                        dbContext.Entry(postReaction).CurrentValues.SetValues(new PostReaction { PostId = postReaction.Id, UserId = currentUser.Id, Type = Reaction });
+                        dbContext.Entry(postReaction).CurrentValues.SetValues(new PostReaction
+                        {
+                            PostId = postReaction.Id,
+                            UserId = currentUser.Id,
+                            Type = Reaction,
+                            UpdatedAt = DateTime.Now,
+                        });
                     }
                     await dbContext.SaveChangesAsync();
                     return Results.Ok(new ResponseData<object>("Successfully Reacted"));
+                }
+                else
+                {
+                    return Results.Unauthorized();
+                }
+            }
+            catch (Exception e)
+            {
+                return Results.BadRequest(new ResponseData<object>(e.Message));
+            }
+        }
+
+        [Authorize]
+        [HttpDelete("post/{Id}/")]
+        public async Task<IResult> DeletePost(int Id)
+        {
+            try
+            {
+                var DeletedAt = DateTime.Now;
+                var currentUser = await _tokenService.GetUser(HttpContext);
+                if (currentUser != null)
+                {
+                    // var reaction = await dbContext.PostReactions
+                    //     .Where(e => e.Id == Id).AsTracking().FirstOrDefaultAsync()
+                    //     ?? throw new Exception("Deletion Failed");
+                    // dbContext.Entry(reaction).CurrentValues.SetValues(new { DeletedAt });
+                    // await dbContext.SaveChangesAsync();
+                    await dbContext.PostReactions.Where(e => e.Id == Id).AsTracking().ExecuteDeleteAsync();
+                    return Results.Ok(new ResponseData<object>("Reaction Deleted Successfully"));
                 }
                 else
                 {
@@ -69,9 +104,9 @@ namespace LanGeng.API.Controllers
                 var currentUser = await _tokenService.GetUser(HttpContext);
                 if (currentUser != null)
                 {
-                    PostComment? postComment = await dbContext.PostComments.Where(up => up.Id == Id).AsNoTracking().FirstOrDefaultAsync();
+                    PostComment? postComment = await dbContext.PostComments.Where(e => e.Id == Id).AsNoTracking().FirstOrDefaultAsync();
                     if (postComment == null) return Results.NotFound();
-                    CommentReaction? commentReaction = await dbContext.CommentReactions.Where(pr => pr.UserId == currentUser.Id && pr.CommentId == postComment.Id).FirstOrDefaultAsync();
+                    CommentReaction? commentReaction = await dbContext.CommentReactions.Where(e => e.UserId == currentUser.Id && e.CommentId == postComment.Id).FirstOrDefaultAsync();
                     if (commentReaction == null)
                     {
                         commentReaction = new() { CommentId = postComment.Id, UserId = currentUser.Id, Type = Reaction };
@@ -79,10 +114,40 @@ namespace LanGeng.API.Controllers
                     }
                     else
                     {
-                        dbContext.Entry(commentReaction).CurrentValues.SetValues(new PostReaction { PostId = commentReaction.Id, UserId = currentUser.Id, Type = Reaction });
+                        dbContext.Entry(commentReaction).CurrentValues.SetValues(new PostReaction
+                        {
+                            PostId = commentReaction.Id,
+                            UserId = currentUser.Id,
+                            Type = Reaction,
+                            UpdatedAt = DateTime.Now,
+                        });
                     }
                     await dbContext.SaveChangesAsync();
                     return Results.Ok(new ResponseData<object>("Successfully Reacted"));
+                }
+                else
+                {
+                    return Results.Unauthorized();
+                }
+            }
+            catch (Exception e)
+            {
+                return Results.BadRequest(new ResponseData<object>(e.Message));
+            }
+        }
+
+        [Authorize]
+        [HttpDelete("comment/{Id}/")]
+        public async Task<IResult> DeleteComment(int Id)
+        {
+            try
+            {
+                var DeletedAt = DateTime.Now;
+                var currentUser = await _tokenService.GetUser(HttpContext);
+                if (currentUser != null)
+                {
+                    await dbContext.CommentReactions.Where(e => e.Id == Id).AsTracking().ExecuteDeleteAsync();
+                    return Results.Ok(new ResponseData<object>("Reaction Deleted Successfully"));
                 }
                 else
                 {

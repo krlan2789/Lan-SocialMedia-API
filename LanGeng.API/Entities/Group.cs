@@ -29,6 +29,7 @@ public class Group
 
     public ICollection<GroupMember>? Members { get; set; }
 
+    public DateTime? DeletedAt { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.Now;
     public DateTime UpdatedAt { get; set; } = DateTime.Now;
 }

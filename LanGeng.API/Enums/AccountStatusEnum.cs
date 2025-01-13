@@ -6,4 +6,5 @@ public enum AccountStatusEnum
     Verified = 2,
     Suspend = 3,
     Inactive = 4,
+    Deleted = 5,
 }

@@ -1,3 +1,4 @@
+using System.Reflection.Metadata.Ecma335;
 using LanGeng.API.Data;
 using LanGeng.API.Dtos;
 using LanGeng.API.Entities;
@@ -48,17 +49,18 @@ namespace LanGeng.API.Controllers
                         Token = SlugHelper.Create(currentUser.Username)
                     };
                     dbContext.UserVerificationTokens.Add(userVerifyToken);
-                    await dbContext.SaveChangesAsync();
+                    var results = await dbContext.SaveChangesAsync();
+                    if (results < 1) throw new Exception("Failed to creating verification link");
 
                     var request = HttpContext.Request;
                     var verificationLink = $"{request.Scheme}://{request.Host}/api/auth/verifyemail?u={token}&t={userVerifyToken.Token}&s={(byte)userVerifyToken.VerificationType}";
-                    await _emailService.SendAsync(
+                    var error = await _emailService.SendAsync(
                         currentUser.Email,
                         "Email Verification",
                         $"Please verify your email by clicking the following link:\n\n<a href=\"{verificationLink}\">Verify</a>"
                     );
 
-                    return Results.Ok(new ResponseData<ResponseUserDto>("Success", currentUser.ToResponseDto()));
+                    return error == null ? Results.Ok(new ResponseData<object>("Request deleting user data has been sent")) : throw new Exception(error);
                 }
                 else
                 {
@@ -71,116 +73,12 @@ namespace LanGeng.API.Controllers
             }
         }
 
-        [HttpGet("verify")]
-        public async Task<IResult> VerifyToken([FromQuery] VerifyTokenDto dto)
-        {
-            try
-            {
-                // Make sure the user is authenticated
-                var VerifiedAt = DateTime.Now;
-                var userToken = await dbContext.UserTokens
-                    .Include(e => e.User)
-                    .Where(e => e.Token == dto.U)
-                    .OrderByDescending(e => e.CreatedAt)
-                    .AsTracking().FirstOrDefaultAsync()
-                    ?? throw new Exception("Invalid Verification Link");
-
-                // Update Verification Status
-                UserVerificationToken? userVerification = await dbContext.UserVerificationTokens.Where(e =>
-                    e.UserId == userToken.UserId &&
-                    e.Token == dto.T &&
-                    e.VerificationType == dto.S
-                ).AsTracking().FirstOrDefaultAsync() ?? throw new Exception("Invalid Verification Link");
-                bool status = userVerification.ExpiresDate > VerifiedAt;
-                if (!status) throw new Exception("Verification Code Expired");
-                dbContext.Entry(userVerification).CurrentValues.SetValues(new { VerifiedAt });
-                var result = await dbContext.SaveChangesAsync();
-
-                UserStatus? userStatus = null;
-                string message = "";
-                switch (dto.S)
-                {
-                    case VerificationTypeEnum.Register:
-                        // Update User Account Status
-                        userStatus = await dbContext.UserStatuses.Where(uv =>
-                            uv.UserId == userToken.UserId
-                        ).FirstAsync() ?? throw new Exception("Invalid Account Status");
-                        dbContext.Entry(userStatus).CurrentValues.SetValues(new { AcconutStatus = AccountStatusEnum.Verified });
-                        message = "Account Verified Successfully";
-                        break;
-                    case VerificationTypeEnum.AccountDeletion:
-                        // Delete User Account
-                        await dbContext.UserStatuses.Where(e => e.UserId == userToken.UserId).AsTracking().ExecuteDeleteAsync();
-                        await dbContext.UserProfiles.Where(e => e.UserId == userToken.UserId).AsTracking().ExecuteDeleteAsync();
-                        await dbContext.Users.Where(e => e.Id == userToken.UserId).AsTracking().ExecuteDeleteAsync();
-                        message = "Account Deleted Successfully";
-                        break;
-                    case VerificationTypeEnum.AccountDeactivation:
-                        // Deactivate User Account
-                        userStatus = await dbContext.UserStatuses.Where(e => e.UserId == userToken.UserId).AsTracking().FirstOrDefaultAsync();
-                        dbContext.Entry(userStatus!).CurrentValues.SetValues(new { AccountStatus = AccountStatusEnum.Inactive });
-                        message = "Account Deacitvated Successfully";
-                        break;
-                    default:
-                        throw new Exception("Invalid Verification Link");
-                }
-                result = await dbContext.SaveChangesAsync();
-
-                return result > 0 ? throw new Exception("Verify Account Failed") : Results.Ok(
-                    new ResponseData<ResponseUserDto>(message)
-                );
-            }
-            catch (Exception e)
-            {
-                return Results.BadRequest(new ResponseData<object>(e.Message));
-            }
-        }
-
-        [Authorize]
-        [HttpPatch("verify")]
-        public async Task<IResult> VerifyCode([FromBody] VerifyCodeDto dto)
-        {
-            try
-            {
-                // Make sure the user is authenticated
-                var verifietAt = DateTime.Now;
-                var currentUser = await _tokenService.GetUser(HttpContext);
-                if (currentUser == null) return Results.Unauthorized();
-
-                // Update Verification Status
-                UserVerification? userVerification = await dbContext.UserVerifications.Where(uv =>
-                    uv.Code == dto.VerificationCode &&
-                    uv.UserId == currentUser.Id &&
-                    uv.VerificationType == VerificationTypeEnum.Register
-                ).FirstAsync() ?? throw new Exception("Invalid Verification Code");
-                bool status = userVerification.ExpiresDate > verifietAt;
-                if (!status) throw new Exception("Verification Code Expired");
-                dbContext.Entry(userVerification).CurrentValues.SetValues(new { VerifiedAt = verifietAt });
-                var result = await dbContext.SaveChangesAsync();
-
-                // Update User Account Status
-                UserStatus? userStatus = await dbContext.UserStatuses.Where(uv =>
-                    uv.UserId == currentUser.Id
-                ).FirstAsync() ?? throw new Exception("Invalid Account Status");
-                dbContext.Entry(userStatus).CurrentValues.SetValues(new { AcconutStatus = AccountStatusEnum.Verified });
-                result = await dbContext.SaveChangesAsync();
-
-                return result > 0 ? throw new Exception("Verify Account Failed") : Results.Ok(
-                    new ResponseData<ResponseUserDto>("Verified Account Successfully")
-                );
-            }
-            catch (Exception e)
-            {
-                return Results.BadRequest(new ResponseData<object>(e.Message));
-            }
-        }
-
         [HttpGet("profile/{Username}")]
         public async Task<IResult> GetProfile(string Username)
         {
             try
             {
-                User? currentUser = await dbContext.Users.Where(user => user.Username == Username).FirstOrDefaultAsync();
+                User? currentUser = await dbContext.Users.Where(e => e.Username == Username).FirstOrDefaultAsync();
                 if (currentUser != null)
                 {
                     return Results.Ok(new ResponseData<ResponseUserDto>("Success", currentUser.ToResponseDto()));
@@ -236,12 +134,12 @@ namespace LanGeng.API.Controllers
                     }
                     else
                     {
-                        return Results.BadRequest(new ResponseData<object>("Profile Already Created"));
+                        return Results.BadRequest(new ResponseData<object>("Profile already created"));
                     }
                 }
                 else
                 {
-                    return Results.NotFound(new ResponseData<object>("User not found"));
+                    return Results.Unauthorized();
                 }
             }
             catch (Exception e)
@@ -262,7 +160,8 @@ namespace LanGeng.API.Controllers
                     if (currentUser.Profile != null)
                     {
                         dbContext.Entry(currentUser.Profile).CurrentValues.SetValues(dto.ToEntity());
-                        return Results.Ok(new ResponseData<object>("Updated Successfully"));
+                        var results = await dbContext.SaveChangesAsync();
+                        return results > 0 ? Results.Ok(new ResponseData<object>("Updated Successfully")) : throw new Exception("Failed to updating profile");
                     }
                     else
                     {
