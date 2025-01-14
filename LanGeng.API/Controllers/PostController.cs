@@ -88,7 +88,7 @@ namespace LanGeng.API.Controllers
                             await dbContext.SaveChangesAsync();
                         }
                     }
-                    return Results.Ok(new ResponseData<UserPostDto>("Post Created Successfully"));
+                    return Results.Ok(new ResponseData<object>("Post Created Successfully"));
                 }
                 else
                 {
@@ -112,8 +112,20 @@ namespace LanGeng.API.Controllers
                 if (currentUser != null)
                 {
                     var post = await dbContext.UserPosts
+                        .Include(e => e.Group)
                         .Where(e => e.Slug == Slug).AsTracking().FirstOrDefaultAsync()
                         ?? throw new Exception("Deletion Failed");
+                    if (currentUser.Id != post.AuthorId)
+                    {
+                        if (post.GroupId == null)
+                        {
+                            throw new Exception("Not allowed to delete this post");
+                        }
+                        else if (currentUser.Id != post.Group!.CreatorId)
+                        {
+                            throw new Exception("Not allowed to delete this post");
+                        }
+                    }
                     dbContext.Entry(post).CurrentValues.SetValues(new { DeletedAt });
                     await dbContext.SaveChangesAsync();
                     return Results.Ok(new ResponseData<object>("Post Deleted Successfully"));
