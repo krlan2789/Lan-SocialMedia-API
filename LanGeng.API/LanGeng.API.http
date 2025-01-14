@@ -1,9 +1,11 @@
 @HostAddress = http://localhost:5041/api/v1
 @UsernameOther = ethan
 @UsernameOther2 = alisha
-@UsernameValid = casandra
+# @UsernameValid = casandra
+@UsernameValid = deven.reinger
 @PasswordValid = 12345678
-@TokenValid = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjYXNhbmRyYSIsImp0aSI6IjY1OGQ0MDIwLTg2YzItNDU2YS04ZDdjLWZlYzlhYWQwNzc0OCIsImV4cCI6MTczOTQ0OTE4MiwiaXNzIjoiaHR0cHM6Ly9sb2NhbGhvc3Q6NTA0MSIsImF1ZCI6Imh0dHBzOi8vbG9jYWxob3N0OjUwNDEifQ.p9jZzyVIjJjov7R8E48bAHVBGp2a-SsTHw1dYyQsWuw
+# @TokenValid = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjYXNhbmRyYSIsImp0aSI6IjY1OGQ0MDIwLTg2YzItNDU2YS04ZDdjLWZlYzlhYWQwNzc0OCIsImV4cCI6MTczOTQ0OTE4MiwiaXNzIjoiaHR0cHM6Ly9sb2NhbGhvc3Q6NTA0MSIsImF1ZCI6Imh0dHBzOi8vbG9jYWxob3N0OjUwNDEifQ.p9jZzyVIjJjov7R8E48bAHVBGp2a-SsTHw1dYyQsWuw
+@TokenValid = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkZXZlbi5yZWluZ2VyIiwianRpIjoiNGNjZWFjYmQtYmM0Zi00YzJiLWE5MDMtMzc4MzhhODhlMzg0IiwiZXhwIjoxNzM5NDU5MDU1LCJpc3MiOiJodHRwczovL2xvY2FsaG9zdDo1MDQxIiwiYXVkIjoiaHR0cHM6Ly9sb2NhbGhvc3Q6NTA0MSJ9.k1nolLskSZUQdfmEL3ucDRYyzXLBufzzknTi0mQi1gs
 
 ### Register new user
 # Register
@@ -63,7 +65,7 @@ Authorization: Bearer {{TokenValid}}
 
 ### Delete posts
 # DeletePost
-DELETE {{HostAddress}}/post/this-my-other-po-whc029g1xvthzl2caj50ti3d72e6wm3k5j4g5two2unx1s82
+DELETE {{HostAddress}}/post/est-quod-eos-qui-t7moh67xfv4jf894rzo156977o2amy1kfehgb1d2xs09aizk
 Accept: application/json
 Content-Type: application/json
 Authorization: Bearer {{TokenValid}}
