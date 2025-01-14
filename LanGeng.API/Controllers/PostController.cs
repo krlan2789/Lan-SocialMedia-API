@@ -1,6 +1,7 @@
 using LanGeng.API.Data;
 using LanGeng.API.Dtos;
 using LanGeng.API.Entities;
+using LanGeng.API.Enums;
 using LanGeng.API.Helper;
 using LanGeng.API.Mapping;
 using LanGeng.API.Services;
@@ -18,12 +19,15 @@ namespace LanGeng.API.Controllers
         private readonly ILogger<PostController> _logger;
         private readonly SocialMediaDatabaseContext dbContext;
         private readonly TokenService _tokenService;
+        private readonly IWebHostEnvironment _environment;
+        private readonly string MEDIA_PATH = "post/media";
 
-        public PostController(ILogger<PostController> logger, TokenService tokenService, SocialMediaDatabaseContext context)
+        public PostController(ILogger<PostController> logger, TokenService tokenService, SocialMediaDatabaseContext context, IWebHostEnvironment environment)
         {
             _logger = logger;
-            dbContext = context;
             _tokenService = tokenService;
+            _environment = environment;
+            dbContext = context;
             dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
         }
 
@@ -66,25 +70,53 @@ namespace LanGeng.API.Controllers
                     if (post != null) dbContext.UserPosts.Add(post);
                     else throw new Exception("Failed to create post, try again later.");
                     await dbContext.SaveChangesAsync();
+                    // Save media
+                    if (dto.Media != null && dto.Media.Count > 0)
+                    {
+                        var postMedia = new List<PostMedia>();
+                        foreach (var formFile in dto.Media)
+                        {
+                            if (formFile.Length > 0)
+                            {
+                                var fileExtension = ("" + formFile.FileName).ToLower().Split('.')[^1];
+                                var mediaType = fileExtension switch
+                                {
+                                    "jpg" or "png" or "jpeg" => MediaTypeEnum.Image,
+                                    "mp3" or "wav" or "ogg" => MediaTypeEnum.Audio,
+                                    "mp4" or "m4a" or "mkv" => MediaTypeEnum.Video,
+                                    _ => throw new Exception("Not allowed file"),
+                                };
+                                var filePath = Path.Combine(_environment.WebRootPath, MEDIA_PATH, formFile.FileName);
+                                using (var stream = new FileStream(filePath, FileMode.Create))
+                                {
+                                    await formFile.CopyToAsync(stream);
+                                }
+                                postMedia.Add(new PostMedia
+                                {
+                                    Path = $"{MEDIA_PATH}/{formFile.FileName}",
+                                    PostId = post.Id,
+                                    MediaType = mediaType,
+                                });
+                            }
+                        }
+                        await dbContext.PostMedia.AddRangeAsync(postMedia);
+                        await dbContext.SaveChangesAsync();
+                    }
                     // Save hashtag in post
                     string[] tags = ("" + dto.Content).ExtractHashtags();
                     if (tags.Length > 0)
                     {
-                        // var hashtags = new List<Hashtag>();
-                        // var postTags = new List<PostHashtag>();
                         foreach (string tag in tags)
                         {
                             Hashtag? hashtag = await dbContext.Hashtags.Where(e => e.Tag == tag).AsTracking().FirstOrDefaultAsync();
                             if (hashtag == null)
                             {
                                 hashtag = new Hashtag { Tag = tag.Replace("#", "") };
-                                // hashtags.Add(hashtag);
-                                dbContext.Hashtags.Add(hashtag);
+                                await dbContext.Hashtags.AddAsync(hashtag);
                                 await dbContext.SaveChangesAsync();
                             }
                             PostHashtag? postTag = new() { HashtagId = hashtag.Id, PostId = post.Id };
-                            // postTags.AddRange(postTag);
-                            dbContext.PostHashtags.Add(postTag);
+                            await dbContext.PostHashtags.AddAsync(postTag);
                             await dbContext.SaveChangesAsync();
                         }
                     }
@@ -97,7 +129,7 @@ namespace LanGeng.API.Controllers
             }
             catch (Exception e)
             {
-                return Results.BadRequest(new ResponseData<object>(e.Message, dto));
+                return Results.BadRequest(new ResponseData<object>(e.Message));
             }
         }
 

@@ -16,9 +16,6 @@ public class UserPost
     public bool CommentAvailability { get; set; } = true;
     public string? Content { get; set; }
 
-    [TypeConverter(typeof(string[]))]
-    public IEnumerable<string>? Media { get; set; }
-
     [Required]
     public int AuthorId { get; set; }
     public User? Author { get; set; }
@@ -26,6 +23,7 @@ public class UserPost
     public int? GroupId { get; set; }
     public Group? Group { get; set; }
 
+    public ICollection<PostMedia> Media { get; set; } = [];
     public ICollection<PostComment> Comments { get; set; } = [];
     public ICollection<PostReaction> Reactions { get; set; } = [];
 

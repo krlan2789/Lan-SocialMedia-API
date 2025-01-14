@@ -1,3 +1,5 @@
+using LanGeng.API.Entities;
+
 namespace LanGeng.API.Dtos;
 
 public record class UserPostFullDto

@@ -75,6 +75,15 @@ ASP.NET Project - Social Media REST API
 | 41   | AccountDeletion     |
 |      |                     |
 
+### 1.2.6. MediaTypeEnum
+
+| Code | Label |
+| ---- | ----- |
+| 1    | Image |
+| 2    | Audio |
+| 3    | Video |
+|      |       |
+
 ## 1.3. **Database**
 
 ### 1.3.1. Table Users
@@ -184,8 +193,7 @@ ASP.NET Project - Social Media REST API
 | --- | ------------ | -------- | ------------------------------------------- |
 | PK  | **Id**       | int      | Auto-increament                             |
 |     | Slug         | string   | Length(255), unique                         |
-|     | Status       | byte     | Enum(0=Request, 1=Rejected, 2=Approved,     |
-|     |              |          | 3=Left, 4=Removed)                          |
+|     | Status       | byte     | Enum(GroupMemberStatusEnum)                 |
 | FK  | **GroupId**  | int      |                                             |
 | FK  | **MemberId** | int      |                                             |
 |     | JoinedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss', nullable |
@@ -200,14 +208,23 @@ ASP.NET Project - Social Media REST API
 |     | Slug                | string   | Length(255), unique                         |
 |     | CommentAvailability | bool     | default(true)                               |
 |     | Content             | string   | nullable                                    |
-|     | Media               | string[] | nullable                                    |
 | FK  | **AuthorId**        | int      |                                             |
 | FK  | **GroupId**         | int      | nullable                                    |
 |     | DeletedAt           | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss', nullable |
 |     | CreatedAt           | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss'           |
 |     | UpdatedAt           | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss'           |
 
-### 1.3.11. Table Hashtags
+### 1.3.11. Table PostMedia
+
+|     | Name       | Type     |                                   |
+| --- | ---------- | -------- | --------------------------------- |
+| PK  | **Id**     | int      | Auto-increament                   |
+|     | MediaPath  | string   |                                   |
+|     | MediaType  | byte     | Enum(MediaTypeEnum)               |
+| FK  | **PostId** | int      |                                   |
+|     | CreatedAt  | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
+
+### 1.3.12. Table Hashtags
 
 |     | Name      | Type     |                                   |
 | --- | --------- | -------- | --------------------------------- |
@@ -215,7 +232,7 @@ ASP.NET Project - Social Media REST API
 |     | Tag       | string   | Length(64), unique                |
 |     | CreatedAt | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
 
-### 1.3.12. Table PostHashtags
+### 1.3.13. Table PostHashtags
 
 |     | Name          | Type     |                                   |
 | --- | ------------- | -------- | --------------------------------- |
@@ -224,7 +241,7 @@ ASP.NET Project - Social Media REST API
 | FK  | **HashtagId** | int      |                                   |
 |     | CreatedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
 
-### 1.3.13. Table PostComments
+### 1.3.14. Table PostComments
 
 |     | Name          | Type     |                                             |
 | --- | ------------- | -------- | ------------------------------------------- |
@@ -237,7 +254,7 @@ ASP.NET Project - Social Media REST API
 |     | CreatedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss'           |
 |     | UpdatedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss'           |
 
-### 1.3.14. Table PostReactions
+### 1.3.15. Table PostReactions
 
 |     | Name       | Type     |                                   |
 | --- | ---------- | -------- | --------------------------------- |
@@ -248,7 +265,7 @@ ASP.NET Project - Social Media REST API
 |     | CreatedAt  | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
 |     | UpdatedAt  | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
 
-### 1.3.15. Table CommentReactions
+### 1.3.16. Table CommentReactions
 
 |     | Name          | Type     |                                   |
 | --- | ------------- | -------- | --------------------------------- |
@@ -259,7 +276,7 @@ ASP.NET Project - Social Media REST API
 |     | CreatedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
 |     | UpdatedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
 
-### 1.3.16. Table UserEvents (Not Yet Implemented)
+### 1.3.17. Table UserEvents (Not Yet Implemented)
 
 |     | Name          | Type     |                                   |
 | --- | ------------- | -------- | --------------------------------- |

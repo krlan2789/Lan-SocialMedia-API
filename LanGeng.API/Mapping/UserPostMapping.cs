@@ -16,7 +16,6 @@ public static class UserPostMapping
         };
         if (dto.Content != null) post.Content = dto.Content;
         if (dto.GroupId != null) post.GroupId = dto.GroupId;
-        if (dto.Media != null) post.Media = dto.Media;
         return post;
     }
 
@@ -28,7 +27,7 @@ public static class UserPostMapping
             post.Slug,
             post.CommentAvailability,
             post.Content,
-            post.Media?.ToArray(),
+            post.Media?.Select(e => e.Path).ToArray(),
             "" + post.Author?.Fullname,
             "" + post.Author?.Username,
             post.Group?.Name,
@@ -47,7 +46,7 @@ public static class UserPostMapping
             post.Slug,
             post.CommentAvailability,
             post.Content,
-            post.Media?.ToArray(),
+            post.Media?.Select(e => e.Path).ToArray(),
             "" + post.Author?.Fullname,
             "" + post.Author?.Username,
             post.Group?.Name,

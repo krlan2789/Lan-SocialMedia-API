@@ -16,6 +16,7 @@ public class SocialMediaDatabaseContext(DbContextOptions<SocialMediaDatabaseCont
     public DbSet<Group> Groups => Set<Group>();
     public DbSet<GroupMember> GroupMembers => Set<GroupMember>();
     public DbSet<UserPost> UserPosts => Set<UserPost>();
+    public DbSet<PostMedia> PostMedia => Set<PostMedia>();
     public DbSet<Hashtag> Hashtags => Set<Hashtag>();
     public DbSet<PostHashtag> PostHashtags => Set<PostHashtag>();
     public DbSet<PostComment> PostComments => Set<PostComment>();
@@ -106,13 +107,19 @@ public class SocialMediaDatabaseContext(DbContextOptions<SocialMediaDatabaseCont
             entity.HasIndex(e => e.Slug).IsUnique();
             entity.HasOne(e => e.Author).WithMany().HasForeignKey(r => r.AuthorId);
             entity.HasOne(e => e.Group).WithMany().HasForeignKey(r => r.GroupId);
+            entity.HasMany(e => e.Media).WithOne(r => r.Post).HasForeignKey(r => r.PostId);
             entity.HasMany(e => e.Comments).WithOne(r => r.Post).HasForeignKey(r => r.PostId);
             entity.HasMany(e => e.Reactions).WithOne(r => r.Post).HasForeignKey(r => r.PostId);
-            entity.HasMany(e => e.PostHashtags).WithOne(e => e.Post).HasForeignKey(r => r.PostId).OnDelete(DeleteBehavior.Cascade);
-            entity.HasMany(e => e.Hashtags).WithMany(e => e.Posts).UsingEntity<PostHashtag>(
-            // l => l.HasOne<Hashtag>().WithMany().HasForeignKey(e => e.HashtagId),
-            // r => r.HasOne<UserPost>().WithMany().HasForeignKey(e => e.PostId)
-            );
+            entity.HasMany(e => e.PostHashtags).WithOne(e => e.Post).HasForeignKey(r => r.PostId);//.OnDelete(DeleteBehavior.Cascade);
+            entity.HasMany(e => e.Hashtags).WithMany(e => e.Posts).UsingEntity<PostHashtag>();
+        });
+
+        // PostMedia Table
+        modelBuilder.Entity<PostMedia>(entity =>
+        {
+            entity.HasQueryFilter(e => e.Post != null && e.Post.DeletedAt == null);
+            entity.Property(e => e.MediaType).HasConversion<byte>();
+            entity.HasOne(e => e.Post).WithMany(e => e.Media).HasForeignKey(r => r.PostId).OnDelete(DeleteBehavior.Cascade);
         });
 
         // Hashtags Table
@@ -120,10 +127,6 @@ public class SocialMediaDatabaseContext(DbContextOptions<SocialMediaDatabaseCont
         {
             entity.HasIndex(e => e.Tag).IsUnique();
             entity.HasMany(e => e.PostHashtags).WithOne(e => e.Hashtag).HasForeignKey(r => r.HashtagId).OnDelete(DeleteBehavior.Cascade);
-            // entity.HasMany(e => e.Posts).WithMany(e => e.Hashtags).UsingEntity<PostHashtag>(
-            //     l => l.HasOne<UserPost>().WithMany().HasForeignKey(e => e.PostId),
-            //     r => r.HasOne<Hashtag>().WithMany().HasForeignKey(e => e.HashtagId)
-            // );
         });
 
         // PostHashtags Table
