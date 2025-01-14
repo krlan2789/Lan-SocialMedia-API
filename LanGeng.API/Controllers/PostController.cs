@@ -88,8 +88,7 @@ namespace LanGeng.API.Controllers
                             await dbContext.SaveChangesAsync();
                         }
                     }
-                    var results = await dbContext.SaveChangesAsync();
-                    return results > 0 ? Results.Ok(new ResponseData<UserPostDto>("Post Created Successfully")) : throw new Exception("Failed to creating post");
+                    return Results.Ok(new ResponseData<UserPostDto>("Post Created Successfully"));
                 }
                 else
                 {

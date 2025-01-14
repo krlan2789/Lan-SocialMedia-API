@@ -58,7 +58,7 @@ Content-Type: application/json
 Authorization: Bearer {{TokenValid}}
 
 {
-    "Content": "This my other post.\n\n#newpost #test #tester"
+    "Content": "This is other post 2.\n\n#newpost2 #test #tester"
 }
 
 ### Delete posts
