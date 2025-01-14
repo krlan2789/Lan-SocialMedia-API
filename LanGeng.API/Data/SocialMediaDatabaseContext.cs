@@ -180,7 +180,7 @@ public class SocialMediaDatabaseContext(DbContextOptions<SocialMediaDatabaseCont
         // UserSessionLogs Table
         modelBuilder.Entity<UserSessionLog>(entity =>
         {
-            entity.HasQueryFilter(e => e.User != null && e.User.DeletedAt == null);
+            entity.HasQueryFilter(e => e.User == null || e.User.DeletedAt == null);
             entity.HasOne(e => e.User).WithMany().HasForeignKey(r => r.UserId).OnDelete(DeleteBehavior.NoAction);
         });
     }
