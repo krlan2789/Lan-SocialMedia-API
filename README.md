@@ -259,7 +259,7 @@ ASP.NET Project - Social Media REST API
 |     | CreatedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
 |     | UpdatedAt     | DateTime | Length(20), 'yyyy-MM-dd HH:mm:ss' |
 
-### 1.3.16. Table UserEvents
+### 1.3.16. Table UserEvents (Not Yet Implemented)
 
 |     | Name          | Type     |                                   |
 | --- | ------------- | -------- | --------------------------------- |
