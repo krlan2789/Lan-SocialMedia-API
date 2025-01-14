@@ -174,26 +174,32 @@ namespace LanGeng.API.Controllers
         }
 
         [Authorize]
-        [HttpPatch("join/{Slug}/{Status}")]
-        public async Task<IResult> UpdateMemberStatus(string Slug, GroupMemberStatusEnum Status)
+        [HttpPatch("join/{Slug}")]
+        public async Task<IResult> UpdateMemberStatus(string Slug, [FromBody] UpdateGroupMemberStatusDto dto)
         {
             try
             {
                 var currentUser = await _tokenService.GetUser(HttpContext);
                 if (currentUser != null)
                 {
+                    var group = await dbContext.Groups
+                        .IncludeAll().Where(e => e.Slug == Slug)
+                        .FirstOrDefaultAsync() ?? throw new Exception("Group not found");
+                    if (group.CreatorId != currentUser.Id &&
+                        dto.Status != GroupMemberStatusEnum.Left &&
+                        dto.Status != GroupMemberStatusEnum.Request)
+                        throw new Exception("You are not an admin");
                     var member = await dbContext.GroupMembers
-                        .Where(e => e.Slug == Slug && e.Status == GroupMemberStatusEnum.Request)
+                        .Where(e => e.MemberId == dto.MemberId && e.Status == GroupMemberStatusEnum.Request)
                         .FirstOrDefaultAsync() ?? throw new Exception("Member request not available");
                     dbContext.Entry(member).CurrentValues.SetValues(new
                     {
-                        Status,
+                        Status = dto.Status,
                         UpdatedAt = DateTime.Now,
-                        JoinedAt = Status == GroupMemberStatusEnum.Approved ? (DateTime?)DateTime.Now : null,
-                        DeletedAt = Status == GroupMemberStatusEnum.Left || Status == GroupMemberStatusEnum.Removed ? (DateTime?)DateTime.Now : null,
+                        JoinedAt = dto.Status == GroupMemberStatusEnum.Approved ? DateTime.Now : member.JoinedAt,
                     });
                     await dbContext.SaveChangesAsync();
-                    return Results.Ok(new ResponseData<UserPostDto>("Updated Successfully"));
+                    return Results.Ok(new ResponseData<object>("Updated Successfully"));
                 }
                 else
                 {

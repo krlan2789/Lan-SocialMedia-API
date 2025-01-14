@@ -1,9 +1,9 @@
 @HostAddress = http://localhost:5041/api/v1
-@UsernameOther = jaylon
-@UsernameOther2 = della
-@UsernameValid = nona
+@UsernameOther = ethan
+@UsernameOther2 = alisha
+@UsernameValid = casandra
 @PasswordValid = 12345678
-@TokenValid = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJub25hIiwianRpIjoiNDJmZmYxYmUtMjM5MC00NzdhLTliMDgtNDdkMTU1NmFmYmZhIiwiZXhwIjoxNzM5MTc1NjU2LCJpc3MiOiJodHRwczovL2xvY2FsaG9zdDo1MDQxIiwiYXVkIjoiaHR0cHM6Ly9sb2NhbGhvc3Q6NTA0MSJ9.lmQypwwCCOmqbdHK811VFXsP1Or__YE1W7Od0dEewVw
+@TokenValid = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjYXNhbmRyYSIsImp0aSI6IjY1OGQ0MDIwLTg2YzItNDU2YS04ZDdjLWZlYzlhYWQwNzc0OCIsImV4cCI6MTczOTQ0OTE4MiwiaXNzIjoiaHR0cHM6Ly9sb2NhbGhvc3Q6NTA0MSIsImF1ZCI6Imh0dHBzOi8vbG9jYWxob3N0OjUwNDEifQ.p9jZzyVIjJjov7R8E48bAHVBGp2a-SsTHw1dYyQsWuw
 
 ### Register new user
 # Register
@@ -37,12 +37,12 @@ Authorization: Bearer {{TokenValid}}
 
 ### Get profile
 # UserProfile
-GET {{HostAddress}}/user/profile/{{UsernameOther2}}
+GET {{HostAddress}}/user/profile/{{UsernameOther}}
 Accept: application/json
 
 ### Get posts
 # GetPosts
-GET {{HostAddress}}/post/?limit=8&author={{UsernameOther}}
+GET {{HostAddress}}/post/?limit=8&author={{UsernameOther2}}
 Accept: application/json
 
 ### Get posts 2
@@ -63,7 +63,7 @@ Authorization: Bearer {{TokenValid}}
 
 ### Delete posts
 # DeletePost
-DELETE {{HostAddress}}/post/01a0af30cb8242eb
+DELETE {{HostAddress}}/post/this-my-other-po-whc029g1xvthzl2caj50ti3d72e6wm3k5j4g5two2unx1s82
 Accept: application/json
 Content-Type: application/json
 Authorization: Bearer {{TokenValid}}

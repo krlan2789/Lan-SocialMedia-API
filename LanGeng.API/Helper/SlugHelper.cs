@@ -14,7 +14,11 @@ public static class SlugHelper
         str = Regex.Replace(str, @"\s+", " ").Trim(); // Convert multiple spaces into one space
         str = str[..(str.Length <= maxLength ? str.Length : maxLength)].Trim(); // Cut to maxLength chars
         str = Regex.Replace(str, @"\s", "-"); // Hyphens
-        return $"{str}-{RandomString(64 - str.Length)}";
+        str = $"{str}-{RandomString(64 - str.Length)}";
+        var strArr = str.ToList();
+        strArr[32] = '-';
+        strArr[48] = '-';
+        return string.Join("", strArr);
     }
 
     private static string RandomString(int length)

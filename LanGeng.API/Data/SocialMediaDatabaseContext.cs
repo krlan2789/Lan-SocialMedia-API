@@ -102,8 +102,7 @@ public class SocialMediaDatabaseContext(DbContextOptions<SocialMediaDatabaseCont
         // UserPosts Table
         modelBuilder.Entity<UserPost>(entity =>
         {
-            entity.HasQueryFilter(u => u.DeletedAt == null);
-            entity.HasQueryFilter(e => e.Author != null && e.Author.DeletedAt == null);
+            entity.HasQueryFilter(e => e.DeletedAt == null && e.Author != null && e.Author.DeletedAt == null);
             entity.HasIndex(e => e.Slug).IsUnique();
             entity.HasOne(e => e.Author).WithMany().HasForeignKey(r => r.AuthorId);
             entity.HasOne(e => e.Group).WithMany().HasForeignKey(r => r.GroupId);
@@ -139,8 +138,7 @@ public class SocialMediaDatabaseContext(DbContextOptions<SocialMediaDatabaseCont
         // PostComments Table
         modelBuilder.Entity<PostComment>(entity =>
         {
-            entity.HasQueryFilter(e => e.User != null && e.User.DeletedAt == null);
-            entity.HasQueryFilter(e => e.Post != null && e.Post.DeletedAt == null);
+            entity.HasQueryFilter(e => e.User != null && e.User.DeletedAt == null && e.Post != null && e.Post.DeletedAt == null);
             entity.HasOne(e => e.User).WithMany().HasForeignKey(r => r.UserId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(e => e.Post).WithMany(r => r.Comments).HasForeignKey(r => r.PostId).OnDelete(DeleteBehavior.NoAction);
             entity.HasOne(e => e.Reply).WithMany().HasForeignKey(r => r.ReplyId).OnDelete(DeleteBehavior.NoAction);
@@ -150,8 +148,7 @@ public class SocialMediaDatabaseContext(DbContextOptions<SocialMediaDatabaseCont
         // PostReactions Table
         modelBuilder.Entity<PostReaction>(entity =>
         {
-            entity.HasQueryFilter(e => e.User != null && e.User.DeletedAt == null);
-            entity.HasQueryFilter(e => e.Post != null && e.Post.DeletedAt == null);
+            entity.HasQueryFilter(e => e.User != null && e.User.DeletedAt == null && e.Post != null && e.Post.DeletedAt == null);
             entity.Property(e => e.Type).HasConversion<byte>();
             entity.HasOne(e => e.User).WithMany().HasForeignKey(r => r.UserId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(e => e.Post).WithMany(r => r.Reactions).HasForeignKey(r => r.PostId).OnDelete(DeleteBehavior.NoAction);
@@ -169,8 +166,7 @@ public class SocialMediaDatabaseContext(DbContextOptions<SocialMediaDatabaseCont
         // UserEvents Table
         modelBuilder.Entity<UserEvent>(entity =>
         {
-            entity.HasQueryFilter(e => e.Creator != null && e.Creator.DeletedAt == null);
-            entity.HasQueryFilter(e => e.Post != null && e.Post.DeletedAt == null);
+            entity.HasQueryFilter(e => e.Creator != null && e.Creator.DeletedAt == null && e.Post != null && e.Post.DeletedAt == null);
             entity.HasIndex(e => e.Slug).IsUnique();
             entity.HasOne(e => e.Creator).WithMany().HasForeignKey(r => r.CreatorId);
             entity.HasOne(e => e.Group).WithMany().HasForeignKey(r => r.GroupId);

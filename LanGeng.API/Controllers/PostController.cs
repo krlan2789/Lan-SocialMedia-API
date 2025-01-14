@@ -65,25 +65,28 @@ namespace LanGeng.API.Controllers
                     }
                     if (post != null) dbContext.UserPosts.Add(post);
                     else throw new Exception("Failed to create post, try again later.");
+                    await dbContext.SaveChangesAsync();
                     // Save hashtag in post
                     string[] tags = ("" + dto.Content).ExtractHashtags();
                     if (tags.Length > 0)
                     {
-                        var hashtags = new List<Hashtag>();
-                        var postTags = new List<PostHashtag>();
+                        // var hashtags = new List<Hashtag>();
+                        // var postTags = new List<PostHashtag>();
                         foreach (string tag in tags)
                         {
                             Hashtag? hashtag = await dbContext.Hashtags.Where(e => e.Tag == tag).AsTracking().FirstOrDefaultAsync();
                             if (hashtag == null)
                             {
                                 hashtag = new Hashtag { Tag = tag.Replace("#", "") };
-                                hashtags.Add(hashtag);
+                                // hashtags.Add(hashtag);
+                                dbContext.Hashtags.Add(hashtag);
+                                await dbContext.SaveChangesAsync();
                             }
                             PostHashtag? postTag = new() { HashtagId = hashtag.Id, PostId = post.Id };
-                            postTags.AddRange(postTag);
+                            // postTags.AddRange(postTag);
+                            dbContext.PostHashtags.Add(postTag);
+                            await dbContext.SaveChangesAsync();
                         }
-                        dbContext.Hashtags.AddRange(hashtags);
-                        dbContext.PostHashtags.AddRange(postTags);
                     }
                     var results = await dbContext.SaveChangesAsync();
                     return results > 0 ? Results.Ok(new ResponseData<UserPostDto>("Post Created Successfully")) : throw new Exception("Failed to creating post");
