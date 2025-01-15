@@ -19,6 +19,28 @@ public static class UserPostMapping
         return post;
     }
 
+    public static UserPost ToEntity(this UpdateUserPostDto dto, int authorId)
+    {
+        var post = new UserPost
+        {
+            Slug = SlugHelper.Create("" + dto.Content),
+            AuthorId = authorId,
+            CommentAvailability = dto.CommentAvailability,
+            Content = dto.Content
+        };
+        return post;
+    }
+
+    public static PostMediaDto ToDto(this PostMedia media)
+    {
+        return new PostMediaDto
+        (
+            media.Id,
+            media.Path,
+            media.MediaType
+        );
+    }
+
     public static UserPostDto ToDto(this UserPost post)
     {
         return new UserPostDto
@@ -27,7 +49,7 @@ public static class UserPostMapping
             post.Slug,
             post.CommentAvailability,
             post.Content,
-            post.Media?.Select(e => e.Path).ToArray(),
+            post.Media?.Select(e => e.ToDto()).ToArray(),
             "" + post.Author?.Fullname,
             "" + post.Author?.Username,
             post.Group?.Name,
@@ -46,7 +68,7 @@ public static class UserPostMapping
             post.Slug,
             post.CommentAvailability,
             post.Content,
-            post.Media?.Select(e => e.Path).ToArray(),
+            post.Media?.Select(e => e.ToDto()).ToArray(),
             "" + post.Author?.Fullname,
             "" + post.Author?.Username,
             post.Group?.Name,

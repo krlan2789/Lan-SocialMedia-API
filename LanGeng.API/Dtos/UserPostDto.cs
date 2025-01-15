@@ -1,5 +1,3 @@
-using LanGeng.API.Entities;
-
 namespace LanGeng.API.Dtos;
 
 public record class UserPostDto
@@ -8,7 +6,7 @@ public record class UserPostDto
     string Slug,
     bool CommentAvailability,
     string? Content,
-    string[]? Media,
+    PostMediaDto[]? Media,
     string AuthorName,
     string AuthorUserame,
     string? GroupName,

@@ -20,7 +20,7 @@ namespace LanGeng.API.Controllers
         private readonly SocialMediaDatabaseContext dbContext;
         private readonly TokenService _tokenService;
         private readonly IWebHostEnvironment _environment;
-        private readonly string MEDIA_PATH = "post/media";
+        private readonly string MEDIA_ROOT = "post/media";
 
         public PostController(ILogger<PostController> logger, TokenService tokenService, SocialMediaDatabaseContext context, IWebHostEnvironment environment)
         {
@@ -50,7 +50,7 @@ namespace LanGeng.API.Controllers
 
         [Authorize]
         [HttpPost()]
-        public async Task<IResult> Create(CreateUserPostDto dto)
+        public async Task<IResult> Create([FromBody] CreateUserPostDto dto)
         {
             try
             {
@@ -70,7 +70,7 @@ namespace LanGeng.API.Controllers
                     if (post != null) dbContext.UserPosts.Add(post);
                     else throw new Exception("Failed to create post, try again later.");
                     await dbContext.SaveChangesAsync();
-                    // Save media
+                    // Save media from post
                     if (dto.Media != null && dto.Media.Count > 0)
                     {
                         var postMedia = new List<PostMedia>();
@@ -86,14 +86,15 @@ namespace LanGeng.API.Controllers
                                     "mp4" or "m4a" or "mkv" => MediaTypeEnum.Video,
                                     _ => throw new Exception("Not allowed file"),
                                 };
-                                var filePath = Path.Combine(_environment.WebRootPath, MEDIA_PATH, formFile.FileName);
+                                var mediaDir = GetPath(currentUser, post);
+                                var filePath = Path.Combine(_environment.WebRootPath, mediaDir, formFile.FileName);
                                 using (var stream = new FileStream(filePath, FileMode.Create))
                                 {
                                     await formFile.CopyToAsync(stream);
                                 }
                                 postMedia.Add(new PostMedia
                                 {
-                                    Path = $"{MEDIA_PATH}/{formFile.FileName}",
+                                    Path = $"{mediaDir}/{formFile.FileName}",
                                     PostId = post.Id,
                                     MediaType = mediaType,
                                 });
@@ -102,7 +103,7 @@ namespace LanGeng.API.Controllers
                         await dbContext.PostMedia.AddRangeAsync(postMedia);
                         await dbContext.SaveChangesAsync();
                     }
-                    // Save hashtag in post
+                    // Save hashtag from post
                     string[] tags = ("" + dto.Content).ExtractHashtags();
                     if (tags.Length > 0)
                     {
@@ -121,6 +122,113 @@ namespace LanGeng.API.Controllers
                         }
                     }
                     return Results.Ok(new ResponseData<object>("Post Created Successfully"));
+                }
+                else
+                {
+                    return Results.Unauthorized();
+                }
+            }
+            catch (Exception e)
+            {
+                return Results.BadRequest(new ResponseData<object>(e.Message));
+            }
+        }
+
+        [Authorize]
+        [HttpPost("{Slug}")]
+        public async Task<IResult> Update(string Slug, [FromBody] UpdateUserPostDto dto)
+        {
+            try
+            {
+                var currentUser = await _tokenService.GetUser(HttpContext);
+                if (currentUser != null)
+                {
+                    UserPost? post = await dbContext.UserPosts
+                        .IncludeAll()
+                        .Where(e => e.Slug == Slug)
+                        .AsTracking().FirstOrDefaultAsync()
+                        ?? throw new Exception("Invalid Post");
+                    dbContext.UserPosts.Update(post);
+                    await dbContext.SaveChangesAsync();
+                    // Deleted old media from post
+                    if (dto.DeletedMediaIds != null && dto.DeletedMediaIds.Count > 0)
+                    {
+                        var deletedMedia = await dbContext.PostMedia.Where(e => dto.DeletedMediaIds.Contains(e.Id)).ToListAsync();
+                        foreach (var media in deletedMedia)
+                        {
+                            var filePath = Path.Combine(_environment.WebRootPath, media.Path);
+                            if (System.IO.File.Exists(filePath))
+                            {
+                                System.IO.File.Delete(filePath);
+                            }
+                            await dbContext.PostMedia.Where(e => e.Id == media.Id).ExecuteDeleteAsync();
+                        }
+                    }
+                    // Add new media from post
+                    if (dto.NewMedia != null && dto.NewMedia.Count > 0)
+                    {
+                        var postMedia = new List<PostMedia>();
+                        foreach (var formFile in dto.NewMedia)
+                        {
+                            if (formFile.Length > 0)
+                            {
+                                var fileExtension = ("" + formFile.FileName).ToLower().Split('.')[^1];
+                                var mediaType = fileExtension switch
+                                {
+                                    "jpg" or "png" or "jpeg" => MediaTypeEnum.Image,
+                                    "mp3" or "wav" or "ogg" => MediaTypeEnum.Audio,
+                                    "mp4" or "m4a" or "mkv" => MediaTypeEnum.Video,
+                                    _ => throw new Exception("Not allowed file"),
+                                };
+                                var mediaDir = GetPath(currentUser, post);
+                                var filePath = Path.Combine(_environment.WebRootPath, mediaDir, formFile.FileName);
+                                using (var stream = new FileStream(filePath, FileMode.Create))
+                                {
+                                    await formFile.CopyToAsync(stream);
+                                }
+                                postMedia.Add(new PostMedia
+                                {
+                                    Path = $"{mediaDir}/{formFile.FileName}",
+                                    PostId = post.Id,
+                                    MediaType = mediaType,
+                                });
+                            }
+                        }
+                        await dbContext.PostMedia.AddRangeAsync(postMedia);
+                        await dbContext.SaveChangesAsync();
+                    }
+                    // Update hashtag from post
+                    var oldTags = ("" + post.Content).ExtractHashtags();
+                    var newTags = ("" + dto.Content).ExtractHashtags();
+                    var commonTags = oldTags.Intersect(newTags).ToArray();
+                    if (commonTags.Length != newTags.Length || commonTags.Length != oldTags.Length)
+                    {
+                        // Save new post hashtags
+                        newTags = newTags.Except(commonTags).ToArray();
+                        var postTags = new List<PostHashtag>();
+                        foreach (string tag in newTags)
+                        {
+                            Hashtag? hashtag = await dbContext.Hashtags.Where(e => e.Tag == tag).AsTracking().FirstOrDefaultAsync();
+                            if (hashtag == null)
+                            {
+                                hashtag = new Hashtag { Tag = tag.Replace("#", "") };
+                                await dbContext.Hashtags.AddAsync(hashtag);
+                                await dbContext.SaveChangesAsync();
+                            }
+                            postTags.Add(new() { HashtagId = hashtag.Id, PostId = post.Id });
+                        }
+                        await dbContext.PostHashtags.AddRangeAsync(postTags);
+                        await dbContext.SaveChangesAsync();
+                        // Delete old post hashtags
+                        oldTags = oldTags.Except(commonTags).ToArray();
+                        foreach (string tag in oldTags)
+                        {
+                            Hashtag? hashtag = await dbContext.Hashtags.Where(e => e.Tag == tag).AsTracking().FirstOrDefaultAsync();
+                            if (hashtag == null) continue;
+                            await dbContext.PostHashtags.Where(e => e.HashtagId == hashtag.Id && e.PostId == post.Id).ExecuteDeleteAsync();
+                        }
+                    }
+                    return Results.Ok(new ResponseData<object>("Post Updated Successfully"));
                 }
                 else
                 {
@@ -218,6 +326,11 @@ namespace LanGeng.API.Controllers
             {
                 return Results.BadRequest(new ResponseData<object>(e.Message));
             }
+        }
+
+        private string GetPath(User user, UserPost post)
+        {
+            return Path.Combine(MEDIA_ROOT, "" + user.Id, post.Slug);
         }
     }
 }
