@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using LanGeng.API.Data;
 using LanGeng.API.Dtos;
 using LanGeng.API.Entities;
@@ -31,7 +32,14 @@ namespace LanGeng.API.Controllers
 
         [AllowAnonymous]
         [HttpPost("login")]
-        public async Task<IResult> Login(LoginUserDto dto)
+        [EndpointSummary("Login")]
+        [EndpointDescription("Login to get token for credential.")]
+        [ProducesResponseType<ResponseData<ResponseUserDto>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ResponseError<object>>(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType<ResponseError<LoginUserDto>>(StatusCodes.Status404NotFound)]
+        public async Task<IResult> Login(
+            [FromBody, Description("Credential Form")] LoginUserDto dto
+        )
         {
             try
             {
@@ -52,17 +60,22 @@ namespace LanGeng.API.Controllers
                 }
                 else
                 {
-                    return Results.Unauthorized();
+                    return Results.NotFound(new ResponseError<LoginUserDto>("Invalid username or password", dto));
                 }
             }
             catch (Exception e)
             {
-                return Results.BadRequest(new ResponseData<object>(e.Message));
+                return Results.BadRequest(new ResponseError<object>(e.Message));
             }
         }
 
         [Authorize]
-        [HttpPost("logout")]
+        [HttpDelete("logout")]
+        [EndpointSummary("Logout")]
+        [EndpointDescription("Logout, to clear active token.")]
+        [ProducesResponseType<ResponseData<ResponseUserDto>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ResponseError<object>>(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IResult> Logout()
         {
             try
@@ -74,7 +87,7 @@ namespace LanGeng.API.Controllers
                 {
                     await dbContext.UserTokens.Where(e => e.User != null && e.User.Username == currentUser.Username).ExecuteDeleteAsync();
                     Response.Headers.Remove("Authorization");
-                    return Results.Ok(new ResponseData<ResponseUserDto>("Logout Successfully"));
+                    return Results.Ok(new ResponseData<object>("Logout Successfully"));
                 }
                 else
                 {
@@ -89,7 +102,11 @@ namespace LanGeng.API.Controllers
 
         [AllowAnonymous]
         [HttpPost("register")]
-        public async Task<IResult> Register([FromBody] RegisterUserDto userDto)
+        [EndpointSummary("Register")]
+        [EndpointDescription("Create new account to use authorized endpoints.")]
+        [ProducesResponseType<ResponseData<ResponseUserDto>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ResponseError<object>>(StatusCodes.Status400BadRequest)]
+        public async Task<IResult> Register([FromBody, Description("Registration Form")] RegisterUserDto userDto)
         {
             try
             {
@@ -149,7 +166,11 @@ namespace LanGeng.API.Controllers
         }
 
         [HttpGet("verify")]
-        public async Task<IResult> VerifyToken([FromQuery] VerifyTokenDto dto)
+        [EndpointSummary("Verify (Token URL)")]
+        [EndpointDescription("Verify some task using verification token URL.")]
+        [ProducesResponseType<ResponseData<ResponseUserDto>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ResponseError<object>>(StatusCodes.Status400BadRequest)]
+        public async Task<IResult> VerifyToken([FromQuery, Description("Credential Params")] VerifyTokenDto dto)
         {
             try
             {
@@ -207,7 +228,11 @@ namespace LanGeng.API.Controllers
 
         [Authorize]
         [HttpPatch("verify")]
-        public async Task<IResult> VerifyCode([FromBody] VerifyCodeDto dto)
+        [EndpointSummary("Verify (Security Code)")]
+        [EndpointDescription("Verify some task using security code (authorized user are needed).")]
+        [ProducesResponseType<ResponseData<object>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ResponseError<object>>(StatusCodes.Status400BadRequest)]
+        public async Task<IResult> VerifyCode([FromBody, Description("Verification Form")] VerifyCodeDto dto)
         {
             try
             {
@@ -251,7 +276,7 @@ namespace LanGeng.API.Controllers
                 var result = await dbContext.SaveChangesAsync();
 
                 return result > 0 ? Results.Ok(
-                    new ResponseData<ResponseUserDto>(message)
+                    new ResponseData<object>(message)
                 ) : throw new Exception("Verify Account Failed");
             }
             catch (Exception e)

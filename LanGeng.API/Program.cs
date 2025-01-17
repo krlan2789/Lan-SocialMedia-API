@@ -1,6 +1,7 @@
+using System.ComponentModel;
+using System.Reflection;
 using System.Text;
 using LanGeng.API.Data;
-using LanGeng.API.Helper;
 using LanGeng.API.Middlewares;
 using LanGeng.API.Seeders;
 using LanGeng.API.Services;
@@ -82,6 +83,7 @@ public class Program
                 options.GroupNameFormat = "'v'VVV";
                 options.SubstituteApiVersionInUrl = true;
             });
+        builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddOpenApi();
 
         var app = builder.Build();
@@ -122,7 +124,6 @@ public class Program
         app.UseAuthorization();
         app.UseMiddleware<AuthMiddleware>();
         app.UseMiddleware<UserSessionLoggingMiddleware>();
-        app.UseRouting();
         app.MapControllers();
 
         app.Run();

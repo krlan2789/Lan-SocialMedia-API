@@ -1,7 +1,11 @@
 namespace LanGeng.API.Dtos;
 
-public record class ResponseData<T>(string Message, string? Token, T? Data)
+public record class ResponseData<T>(string? Message, string? Token, T? Data)
 {
+    public ResponseData() : this(default, default, default)
+    {
+    }
+
     public ResponseData(string Message) : this(Message, default, default)
     {
         this.Message = Message;
