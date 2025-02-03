@@ -889,7 +889,7 @@ namespace LanGeng.API.Migrations
             modelBuilder.Entity("LanGeng.API.Entities.UserVerificationToken", b =>
                 {
                     b.HasOne("LanGeng.API.Entities.User", "User")
-                        .WithMany()
+                        .WithMany("VerificationTokens")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -919,6 +919,8 @@ namespace LanGeng.API.Migrations
                     b.Navigation("Profile");
 
                     b.Navigation("UserTokens");
+
+                    b.Navigation("VerificationTokens");
                 });
 
             modelBuilder.Entity("LanGeng.API.Entities.UserPost", b =>

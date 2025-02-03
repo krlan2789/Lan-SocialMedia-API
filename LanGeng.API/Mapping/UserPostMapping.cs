@@ -19,11 +19,11 @@ public static class UserPostMapping
         return post;
     }
 
-    public static UserPost ToEntity(this UpdateUserPostDto dto, int authorId)
+    public static UserPost ToEntity(this UpdateUserPostDto dto, string slug, int authorId)
     {
         var post = new UserPost
         {
-            Slug = SlugHelper.Create("" + dto.Content),
+            Slug = slug,
             AuthorId = authorId,
             CommentAvailability = dto.CommentAvailability,
             Content = dto.Content

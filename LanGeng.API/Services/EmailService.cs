@@ -1,9 +1,10 @@
+using LanGeng.API.Interfaces;
 using MailKit.Net.Smtp;
 using MimeKit;
 
 namespace LanGeng.API.Services;
 
-public class EmailService
+public class EmailService : IEmailService
 {
     private readonly IConfiguration _configuration;
     private readonly ILogger<EmailService> _logger;

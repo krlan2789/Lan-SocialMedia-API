@@ -3,12 +3,13 @@ using System.Security.Claims;
 using System.Text;
 using LanGeng.API.Data;
 using LanGeng.API.Entities;
+using LanGeng.API.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 namespace LanGeng.API.Services;
 
-public class TokenService
+public class TokenService : ITokenService
 {
     private readonly string _secretKey;
     private readonly string _issuer;

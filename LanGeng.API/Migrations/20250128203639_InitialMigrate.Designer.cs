@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LanGeng.API.Migrations
 {
     [DbContext(typeof(SocialMediaDatabaseContext))]
-    [Migration("20250113041511_InitialMigrate")]
+    [Migration("20250128203639_InitialMigrate")]
     partial class InitialMigrate
     {
         /// <inheritdoc />
@@ -70,6 +70,9 @@ namespace LanGeng.API.Migrations
 
                     b.Property<int>("CreatorId")
                         .HasColumnType("int");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
@@ -183,6 +186,9 @@ namespace LanGeng.API.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<int>("PostId")
                         .HasColumnType("int");
 
@@ -222,6 +228,34 @@ namespace LanGeng.API.Migrations
                     b.HasIndex("HashtagId");
 
                     b.ToTable("PostHashtags");
+                });
+
+            modelBuilder.Entity("LanGeng.API.Entities.PostMedia", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<byte>("MediaType")
+                        .HasColumnType("tinyint");
+
+                    b.Property<string>("Path")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("PostId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PostId");
+
+                    b.ToTable("PostMedia");
                 });
 
             modelBuilder.Entity("LanGeng.API.Entities.PostReaction", b =>
@@ -265,6 +299,9 @@ namespace LanGeng.API.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Email")
@@ -385,11 +422,11 @@ namespace LanGeng.API.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<int?>("GroupId")
                         .HasColumnType("int");
-
-                    b.PrimitiveCollection<string>("Media")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Slug")
                         .IsRequired()
@@ -728,6 +765,17 @@ namespace LanGeng.API.Migrations
                     b.Navigation("Post");
                 });
 
+            modelBuilder.Entity("LanGeng.API.Entities.PostMedia", b =>
+                {
+                    b.HasOne("LanGeng.API.Entities.UserPost", "Post")
+                        .WithMany("Media")
+                        .HasForeignKey("PostId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Post");
+                });
+
             modelBuilder.Entity("LanGeng.API.Entities.PostReaction", b =>
                 {
                     b.HasOne("LanGeng.API.Entities.UserPost", "Post")
@@ -844,7 +892,7 @@ namespace LanGeng.API.Migrations
             modelBuilder.Entity("LanGeng.API.Entities.UserVerificationToken", b =>
                 {
                     b.HasOne("LanGeng.API.Entities.User", "User")
-                        .WithMany()
+                        .WithMany("VerificationTokens")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -874,11 +922,15 @@ namespace LanGeng.API.Migrations
                     b.Navigation("Profile");
 
                     b.Navigation("UserTokens");
+
+                    b.Navigation("VerificationTokens");
                 });
 
             modelBuilder.Entity("LanGeng.API.Entities.UserPost", b =>
                 {
                     b.Navigation("Comments");
+
+                    b.Navigation("Media");
 
                     b.Navigation("PostHashtags");
 

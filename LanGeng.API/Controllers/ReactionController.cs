@@ -2,6 +2,7 @@ using LanGeng.API.Data;
 using LanGeng.API.Dtos;
 using LanGeng.API.Entities;
 using LanGeng.API.Enums;
+using LanGeng.API.Interfaces;
 using LanGeng.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -16,9 +17,9 @@ namespace LanGeng.API.Controllers
     {
         private readonly ILogger<ReactionController> _logger;
         private readonly SocialMediaDatabaseContext dbContext;
-        private readonly TokenService _tokenService;
+        private readonly ITokenService _tokenService;
 
-        public ReactionController(ILogger<ReactionController> logger, TokenService tokenService, SocialMediaDatabaseContext context)
+        public ReactionController(ILogger<ReactionController> logger, ITokenService tokenService, SocialMediaDatabaseContext context)
         {
             _logger = logger;
             dbContext = context;

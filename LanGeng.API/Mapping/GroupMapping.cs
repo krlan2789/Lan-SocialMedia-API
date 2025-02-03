@@ -30,7 +30,7 @@ public static class GroupMapping
             (byte)group.PrivacyType,
             group.ProfileImage,
             group.Description,
-            group.Creator!,
+            group.Creator!.ToResponseDto(),
             group.Members?.Count ?? 0,
             group.CreatedAt.ToString()
         );

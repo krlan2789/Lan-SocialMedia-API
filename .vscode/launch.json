@@ -5,6 +5,12 @@
             "type": "dotnet",
             "request": "launch",
             "projectPath": "${workspaceFolder}\\LanGeng.API\\LanGeng.API.csproj"
+        },
+        {
+            "name": "C#: LanGeng.Test [Unit Testing]",
+            "type": "dotnet",
+            "request": "launch",
+            "projectPath": "${workspaceFolder}\\LanGeng.Test\\LanGeng.Test.csproj"
         }
     ]
 }

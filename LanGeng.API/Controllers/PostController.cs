@@ -1,13 +1,9 @@
-using LanGeng.API.Data;
 using LanGeng.API.Dtos;
 using LanGeng.API.Entities;
-using LanGeng.API.Enums;
-using LanGeng.API.Helper;
+using LanGeng.API.Interfaces;
 using LanGeng.API.Mapping;
-using LanGeng.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace LanGeng.API.Controllers
 {
@@ -17,30 +13,32 @@ namespace LanGeng.API.Controllers
     public class PostController : ControllerBase
     {
         private readonly ILogger<PostController> _logger;
-        private readonly SocialMediaDatabaseContext dbContext;
-        private readonly TokenService _tokenService;
+        private readonly IPostService _postService;
+        private readonly ITokenService _tokenService;
         private readonly IWebHostEnvironment _environment;
-        private readonly string MEDIA_ROOT = "post/media";
 
-        public PostController(ILogger<PostController> logger, TokenService tokenService, SocialMediaDatabaseContext context, IWebHostEnvironment environment)
+        public PostController(ILogger<PostController> logger, ITokenService tokenService, IPostService postService, IWebHostEnvironment environment)
         {
             _logger = logger;
             _tokenService = tokenService;
             _environment = environment;
-            dbContext = context;
-            dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+            _postService = postService;
         }
 
         [HttpGet("{Slug}")]
+        [EndpointSummary("Get post by Slug")]
+        [EndpointDescription("Get post by Slug.")]
+        [ProducesResponseType<ResponseData<UserPostFullDto>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ResponseError<object>>(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType<ResponseError<object>>(StatusCodes.Status404NotFound)]
         public async Task<IResult> GetBySlug(string Slug)
         {
             try
             {
-                UserPost? post = await dbContext.UserPosts
-                    .IncludeAll()
-                    .Where(e => e.Slug == Slug)
-                    .FirstOrDefaultAsync();
-                return post == null ? Results.NotFound() : Results.Ok(new ResponseData<UserPostFullDto>("Success", post.ToFullDto()));
+                UserPost? post = await _postService.GetPostBySlugAsync(Slug);
+                return post == null ?
+                    Results.NotFound(new ResponseError<object>("No posts found")) :
+                    Results.Ok(new ResponseData<UserPostFullDto>("Success", post.ToFullDto()));
             }
             catch (Exception e)
             {
@@ -48,8 +46,43 @@ namespace LanGeng.API.Controllers
             }
         }
 
+        [HttpGet()]
+        [EndpointSummary("Get Posts")]
+        [EndpointDescription("Get posts with filters and pagination.")]
+        [ProducesResponseType<ResponseData<ResponsePostsDto>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ResponseError<FilterPostDto>>(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType<ResponseError<object>>(StatusCodes.Status404NotFound)]
+        public async Task<IResult> GetPerPage([FromQuery] FilterPostDto filters)
+        {
+            try
+            {
+                var tags = ("" + filters.Tags).ToLower().Replace("#", "").Split(",");
+                var result = await _postService.GetPostsAsync(
+                    filters.Keyword, filters.Author, filters.Group, tags, filters.Page, filters.Limit
+                );
+                if (result == null) throw new Exception("No posts found");
+                var (posts, totalPosts, page, limit) = result.Value;
+                var postsDto = posts.Select(e => e.ToDto()).ToList();
+                return postsDto != null ?
+                    Results.Ok(new ResponseData<ResponsePostsDto>(
+                        "Success",
+                        new ResponsePostsDto(page, limit, totalPosts, postsDto)
+                    )) :
+                    Results.NotFound(new ResponseError<object>("No posts found"));
+            }
+            catch (Exception e)
+            {
+                return Results.BadRequest(new ResponseData<FilterPostDto>(e.Message, filters));
+            }
+        }
+
         [Authorize]
         [HttpPost()]
+        [EndpointSummary("Create New Post")]
+        [EndpointDescription("Create new post.")]
+        [ProducesResponseType<ResponseData<UserPostFullDto>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ResponseError<CreateUserPostDto>>(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IResult> Create([FromBody] CreateUserPostDto dto)
         {
             try
@@ -57,71 +90,15 @@ namespace LanGeng.API.Controllers
                 var currentUser = await _tokenService.GetUser(HttpContext);
                 if (currentUser != null)
                 {
-                    UserPost? post = null;
-                    int tryCount = 0;
-                    while (tryCount < 16)
-                    {
-                        post = dto.ToEntity(currentUser.Id);
-                        var posts = await dbContext.UserPosts.Where(e => e.Slug == post.Slug).AsTracking().ToListAsync();
-                        tryCount++;
-                        if (posts == null || posts.Count <= 0) break;
-                        else post = null;
-                    }
-                    if (post != null) dbContext.UserPosts.Add(post);
-                    else throw new Exception("Failed to create post, try again later.");
-                    await dbContext.SaveChangesAsync();
+                    UserPost post = dto.ToEntity(currentUser.Id);
+                    // Create post
+                    var error = await _postService.CreatePostAsync(post);
+                    if (!string.IsNullOrEmpty(error)) throw new Exception(error);
                     // Save media from post
-                    if (dto.Media != null && dto.Media.Count > 0)
-                    {
-                        var postMedia = new List<PostMedia>();
-                        foreach (var formFile in dto.Media)
-                        {
-                            if (formFile.Length > 0)
-                            {
-                                var fileExtension = ("" + formFile.FileName).ToLower().Split('.')[^1];
-                                var mediaType = fileExtension switch
-                                {
-                                    "jpg" or "png" or "jpeg" => MediaTypeEnum.Image,
-                                    "mp3" or "wav" or "ogg" => MediaTypeEnum.Audio,
-                                    "mp4" or "m4a" or "mkv" => MediaTypeEnum.Video,
-                                    _ => throw new Exception("Not allowed file"),
-                                };
-                                var mediaDir = GetPath(currentUser, post);
-                                var filePath = Path.Combine(_environment.WebRootPath, mediaDir, formFile.FileName);
-                                using (var stream = new FileStream(filePath, FileMode.Create))
-                                {
-                                    await formFile.CopyToAsync(stream);
-                                }
-                                postMedia.Add(new PostMedia
-                                {
-                                    Path = $"{mediaDir}/{formFile.FileName}",
-                                    PostId = post.Id,
-                                    MediaType = mediaType,
-                                });
-                            }
-                        }
-                        await dbContext.PostMedia.AddRangeAsync(postMedia);
-                        await dbContext.SaveChangesAsync();
-                    }
-                    // Save hashtag from post
-                    string[] tags = ("" + dto.Content).ExtractHashtags();
-                    if (tags.Length > 0)
-                    {
-                        foreach (string tag in tags)
-                        {
-                            Hashtag? hashtag = await dbContext.Hashtags.Where(e => e.Tag == tag).AsTracking().FirstOrDefaultAsync();
-                            if (hashtag == null)
-                            {
-                                hashtag = new Hashtag { Tag = tag.Replace("#", "") };
-                                await dbContext.Hashtags.AddAsync(hashtag);
-                                await dbContext.SaveChangesAsync();
-                            }
-                            PostHashtag? postTag = new() { HashtagId = hashtag.Id, PostId = post.Id };
-                            await dbContext.PostHashtags.AddAsync(postTag);
-                            await dbContext.SaveChangesAsync();
-                        }
-                    }
-                    return Results.Ok(new ResponseData<object>("Post Created Successfully"));
+                    error = await _postService.CreateMediaPostAsync(post.Slug, _environment.WebRootPath, dto.Media);
+                    return string.IsNullOrEmpty(error) ?
+                        Results.Ok(new ResponseData<object>("Post Created Successfully")) :
+                        Results.BadRequest(new ResponseData<CreateUserPostDto>("Failed to create post", dto));
                 }
                 else
                 {
@@ -130,12 +107,17 @@ namespace LanGeng.API.Controllers
             }
             catch (Exception e)
             {
-                return Results.BadRequest(new ResponseData<object>(e.Message));
+                return Results.BadRequest(new ResponseData<CreateUserPostDto>(e.Message, dto));
             }
         }
 
         [Authorize]
         [HttpPost("{Slug}")]
+        [EndpointSummary("Update a Post")]
+        [EndpointDescription("Update a post.")]
+        [ProducesResponseType<ResponseData<UserPostFullDto>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ResponseError<UpdateUserPostDto>>(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IResult> Update(string Slug, [FromBody] UpdateUserPostDto dto)
         {
             try
@@ -143,92 +125,13 @@ namespace LanGeng.API.Controllers
                 var currentUser = await _tokenService.GetUser(HttpContext);
                 if (currentUser != null)
                 {
-                    UserPost? post = await dbContext.UserPosts
-                        .IncludeAll()
-                        .Where(e => e.Slug == Slug)
-                        .AsTracking().FirstOrDefaultAsync()
-                        ?? throw new Exception("Invalid Post");
-                    dbContext.UserPosts.Update(post);
-                    await dbContext.SaveChangesAsync();
-                    // Deleted old media from post
-                    if (dto.DeletedMediaIds != null && dto.DeletedMediaIds.Count > 0)
-                    {
-                        var deletedMedia = await dbContext.PostMedia.Where(e => dto.DeletedMediaIds.Contains(e.Id)).ToListAsync();
-                        foreach (var media in deletedMedia)
-                        {
-                            var filePath = Path.Combine(_environment.WebRootPath, media.Path);
-                            if (System.IO.File.Exists(filePath))
-                            {
-                                System.IO.File.Delete(filePath);
-                            }
-                            await dbContext.PostMedia.Where(e => e.Id == media.Id).ExecuteDeleteAsync();
-                        }
-                    }
-                    // Add new media from post
-                    if (dto.NewMedia != null && dto.NewMedia.Count > 0)
-                    {
-                        var postMedia = new List<PostMedia>();
-                        foreach (var formFile in dto.NewMedia)
-                        {
-                            if (formFile.Length > 0)
-                            {
-                                var fileExtension = ("" + formFile.FileName).ToLower().Split('.')[^1];
-                                var mediaType = fileExtension switch
-                                {
-                                    "jpg" or "png" or "jpeg" => MediaTypeEnum.Image,
-                                    "mp3" or "wav" or "ogg" => MediaTypeEnum.Audio,
-                                    "mp4" or "m4a" or "mkv" => MediaTypeEnum.Video,
-                                    _ => throw new Exception("Not allowed file"),
-                                };
-                                var mediaDir = GetPath(currentUser, post);
-                                var filePath = Path.Combine(_environment.WebRootPath, mediaDir, formFile.FileName);
-                                using (var stream = new FileStream(filePath, FileMode.Create))
-                                {
-                                    await formFile.CopyToAsync(stream);
-                                }
-                                postMedia.Add(new PostMedia
-                                {
-                                    Path = $"{mediaDir}/{formFile.FileName}",
-                                    PostId = post.Id,
-                                    MediaType = mediaType,
-                                });
-                            }
-                        }
-                        await dbContext.PostMedia.AddRangeAsync(postMedia);
-                        await dbContext.SaveChangesAsync();
-                    }
-                    // Update hashtag from post
-                    var oldTags = ("" + post.Content).ExtractHashtags();
-                    var newTags = ("" + dto.Content).ExtractHashtags();
-                    var commonTags = oldTags.Intersect(newTags).ToArray();
-                    if (commonTags.Length != newTags.Length || commonTags.Length != oldTags.Length)
-                    {
-                        // Save new post hashtags
-                        newTags = newTags.Except(commonTags).ToArray();
-                        var postTags = new List<PostHashtag>();
-                        foreach (string tag in newTags)
-                        {
-                            Hashtag? hashtag = await dbContext.Hashtags.Where(e => e.Tag == tag).AsTracking().FirstOrDefaultAsync();
-                            if (hashtag == null)
-                            {
-                                hashtag = new Hashtag { Tag = tag.Replace("#", "") };
-                                await dbContext.Hashtags.AddAsync(hashtag);
-                                await dbContext.SaveChangesAsync();
-                            }
-                            postTags.Add(new() { HashtagId = hashtag.Id, PostId = post.Id });
-                        }
-                        await dbContext.PostHashtags.AddRangeAsync(postTags);
-                        await dbContext.SaveChangesAsync();
-                        // Delete old post hashtags
-                        oldTags = oldTags.Except(commonTags).ToArray();
-                        foreach (string tag in oldTags)
-                        {
-                            Hashtag? hashtag = await dbContext.Hashtags.Where(e => e.Tag == tag).AsTracking().FirstOrDefaultAsync();
-                            if (hashtag == null) continue;
-                            await dbContext.PostHashtags.Where(e => e.HashtagId == hashtag.Id && e.PostId == post.Id).ExecuteDeleteAsync();
-                        }
-                    }
-                    return Results.Ok(new ResponseData<object>("Post Updated Successfully"));
+                    var post = dto.ToEntity(Slug, currentUser.Id);
+                    var error = await _postService.UpdatePostAsync(Slug, post);
+                    if (!string.IsNullOrEmpty(error)) throw new Exception(error);
+                    error = await _postService.UpdateMediaPostAsync(Slug, _environment.WebRootPath, dto.NewMedia, dto.DeletedMediaIds);
+                    return string.IsNullOrEmpty(error) ?
+                        Results.Ok(new ResponseData<object>("Post Updated Successfully")) :
+                        Results.BadRequest(new ResponseData<UpdateUserPostDto>("Failed to update post", dto));
                 }
                 else
                 {
@@ -237,12 +140,17 @@ namespace LanGeng.API.Controllers
             }
             catch (Exception e)
             {
-                return Results.BadRequest(new ResponseData<object>(e.Message));
+                return Results.BadRequest(new ResponseData<UpdateUserPostDto>(e.Message, dto));
             }
         }
 
         [Authorize]
         [HttpDelete("{Slug}")]
+        [EndpointSummary("Delete a Post")]
+        [EndpointDescription("Delete a post by slug and/or author.")]
+        [ProducesResponseType<ResponseData<object>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ResponseError<object>>(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IResult> Delete(string Slug)
         {
             try
@@ -251,23 +159,8 @@ namespace LanGeng.API.Controllers
                 var currentUser = await _tokenService.GetUser(HttpContext);
                 if (currentUser != null)
                 {
-                    var post = await dbContext.UserPosts
-                        .Include(e => e.Group)
-                        .Where(e => e.Slug == Slug).AsTracking().FirstOrDefaultAsync()
-                        ?? throw new Exception("Deletion Failed");
-                    if (currentUser.Id != post.AuthorId)
-                    {
-                        if (post.GroupId == null)
-                        {
-                            throw new Exception("Not allowed to delete this post");
-                        }
-                        else if (currentUser.Id != post.Group!.CreatorId)
-                        {
-                            throw new Exception("Not allowed to delete this post");
-                        }
-                    }
-                    dbContext.Entry(post).CurrentValues.SetValues(new { DeletedAt });
-                    await dbContext.SaveChangesAsync();
+                    var error = await _postService.DeletePostBySlugAsync(Slug, DeletedAt, currentUser.Id);
+                    if (!string.IsNullOrEmpty(error)) throw new Exception(error);
                     return Results.Ok(new ResponseData<object>("Post Deleted Successfully"));
                 }
                 else
@@ -279,58 +172,6 @@ namespace LanGeng.API.Controllers
             {
                 return Results.BadRequest(new ResponseData<object>(e.Message));
             }
-        }
-
-        [HttpGet()]
-        public async Task<IResult> GetPerPage([FromQuery] FilterPostDto filters)
-        {
-            try
-            {
-                var tags = ("" + filters.Tags).ToLower().Replace("#", "").Split(",");
-                var defaultLimit = 16;
-                string keyword = $"%{filters.Keyword}%".ToLower();
-                string author = $"%{filters.Author}%".ToLower();
-                string group = $"%{filters.Group}%".ToLower();
-                var query = dbContext.UserPosts
-                    .IncludeAll()
-                    .Where(e =>
-                        (string.IsNullOrEmpty(filters.Tags) || e.Hashtags.Any(t => tags.Contains(t.Tag))) &&
-                        (string.IsNullOrEmpty(filters.Author) || EF.Functions.Like(e.Author!.Username.ToLower(), author) || EF.Functions.Like(e.Author!.Fullname.ToLower(), author)) &&
-                        (string.IsNullOrEmpty(filters.Group) || (e.Group != null && (EF.Functions.Like(e.Group.Slug.ToLower(), group) || EF.Functions.Like(e.Group.Name.ToLower(), group)))) &&
-                        (
-                            string.IsNullOrEmpty(filters.Keyword) || EF.Functions.Like(("" + e.Content).ToLower(), keyword) ||
-                            e.Author == null || EF.Functions.Like(e.Author.Username.ToLower(), keyword) || EF.Functions.Like(e.Author.Fullname.ToLower(), keyword) ||
-                            e.Group == null || EF.Functions.Like(e.Group.Slug.ToLower(), keyword) || EF.Functions.Like(e.Group.Name.ToLower(), keyword)
-                        )
-                    );
-                var totalPosts = await query.CountAsync();
-                var limit = filters.Limit ?? defaultLimit;
-                var start = ((filters.Page > 0 ? filters.Page : 1) - 1) * limit;
-                var posts = await query
-                    .Skip(start)
-                    .Take(limit)
-                    .OrderByDescending(p => p.UpdatedAt)
-                    .ToListAsync();
-                var postsDto = posts.Select(e => e.ToDto()).ToList();
-                return Results.Ok(new ResponseData<ResponsePostsDto>(
-                    "Success",
-                    new ResponsePostsDto(
-                        filters.Page > 0 ? filters.Page : 1,
-                        limit,
-                        totalPosts,
-                        postsDto
-                    )
-                ));
-            }
-            catch (Exception e)
-            {
-                return Results.BadRequest(new ResponseData<object>(e.Message));
-            }
-        }
-
-        private string GetPath(User user, UserPost post)
-        {
-            return Path.Combine(MEDIA_ROOT, "" + user.Id, post.Slug);
         }
     }
 }

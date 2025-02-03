@@ -1,13 +1,11 @@
-using LanGeng.API.Data;
 using LanGeng.API.Dtos;
 using LanGeng.API.Entities;
 using LanGeng.API.Enums;
 using LanGeng.API.Helper;
+using LanGeng.API.Interfaces;
 using LanGeng.API.Mapping;
-using LanGeng.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace LanGeng.API.Controllers
 {
@@ -17,46 +15,43 @@ namespace LanGeng.API.Controllers
     public class UserController : ControllerBase
     {
         private readonly ILogger<UserController> _logger;
-        private readonly TokenService _tokenService;
-        private readonly EmailService _emailService;
-        private readonly SocialMediaDatabaseContext dbContext;
+        private readonly ITokenService _tokenService;
+        private readonly IEmailService _emailService;
+        private readonly IUserService _userService;
 
-        public UserController(ILogger<UserController> logger, TokenService tokenService, EmailService emailService, SocialMediaDatabaseContext context)
+        public UserController(ILogger<UserController> logger, ITokenService tokenService, IEmailService emailService, IUserService userService)
         {
             _logger = logger;
             _tokenService = tokenService;
             _emailService = emailService;
-            dbContext = context;
-            dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+            _userService = userService;
         }
 
         [Authorize]
         [HttpDelete()]
+        [EndpointSummary("Request Delete")]
+        [EndpointDescription("Request delete and receive email verification.")]
+        [ProducesResponseType<ResponseData<object>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ResponseError<object>>(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType<ResponseError<object>>(StatusCodes.Status404NotFound)]
         public async Task<IResult> RequestDelete()
         {
             try
             {
                 var currentUser = await _tokenService.GetUser(HttpContext);
                 var token = _tokenService.GetToken(HttpContext);
-                if (currentUser != null)
+                if (currentUser != null && !string.IsNullOrEmpty(token))
                 {
-                    var userVerifyToken = new UserVerificationToken
-                    {
-                        UserId = currentUser.Id,
-                        VerificationType = VerificationTypeEnum.AccountDeletion,
-                        Email = currentUser.Email,
-                        Token = SlugHelper.Create(currentUser.Username)
-                    };
-                    dbContext.UserVerificationTokens.Add(userVerifyToken);
-                    var results = await dbContext.SaveChangesAsync();
-                    if (results < 1) throw new Exception("Failed to creating verification link");
-
+                    var verifyToken = SlugHelper.Create(currentUser.Username);
+                    var verifyType = VerificationTypeEnum.AccountDeletion;
+                    var error = await _userService.CreateVerificationTokenAsync(currentUser.Id, verifyToken, verifyType);
+                    if (!string.IsNullOrEmpty(error)) throw new Exception(error);
                     var request = HttpContext.Request;
-                    var verificationLink = $"{request.Scheme}://{request.Host}/api/auth/verifyemail?u={token}&t={userVerifyToken.Token}&s={(byte)userVerifyToken.VerificationType}";
-                    var error = await _emailService.SendAsync(
+                    var verificationLink = $"{request.Scheme}://{request.Host}/api/auth/verifyemail?u={token}&t={verifyToken}&s={(byte)verifyType}";
+                    error = await _emailService.SendAsync(
                         currentUser.Email,
                         "Email Verification",
-                        $"Please verify your email by clicking the following link:\n\n<a href=\"{verificationLink}\">Verify</a>"
+                        EmailHelper.CreateHtmlWithLink(currentUser.Fullname, "Email Verification", "Please verify your email by clicking the following link:", verificationLink)
                     );
 
                     return error == null ? Results.Ok(new ResponseData<object>("Request deleting user data has been sent")) : throw new Exception(error);
@@ -73,11 +68,16 @@ namespace LanGeng.API.Controllers
         }
 
         [HttpGet("profile/{Username}")]
+        [EndpointSummary("Get User Profile")]
+        [EndpointDescription("Get user profile by username.")]
+        [ProducesResponseType<ResponseData<ResponseUserDto>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ResponseError<object>>(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType<ResponseError<object>>(StatusCodes.Status404NotFound)]
         public async Task<IResult> GetProfile(string Username)
         {
             try
             {
-                User? currentUser = await dbContext.Users.Where(e => e.Username == Username).FirstOrDefaultAsync();
+                User? currentUser = await _userService.GetUserByUsernameAsync(Username);
                 if (currentUser != null)
                 {
                     return Results.Ok(new ResponseData<ResponseUserDto>("Success", currentUser.ToResponseDto()));
@@ -95,6 +95,11 @@ namespace LanGeng.API.Controllers
 
         [Authorize]
         [HttpGet("profile")]
+        [EndpointSummary("Get My Profile")]
+        [EndpointDescription("Get authenticated user profile.")]
+        [ProducesResponseType<ResponseData<ResponseUserDto>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ResponseError<object>>(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IResult> GetProfileSelf()
         {
             try
@@ -117,6 +122,12 @@ namespace LanGeng.API.Controllers
 
         [Authorize]
         [HttpPost("profile")]
+        [EndpointSummary("Create User Profile")]
+        [EndpointDescription("Create user profile.")]
+        [ProducesResponseType<ResponseData<object>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ResponseError<object>>(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType<ResponseError<object>>(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IResult> CreateProfile([FromBody] CreateUserProfileDto dto)
         {
             try
@@ -126,9 +137,8 @@ namespace LanGeng.API.Controllers
                 {
                     if (currentUser.Profile == null)
                     {
-                        var profile = dto.ToEntity();
-                        dbContext.UserProfiles.Add(profile);
-                        await dbContext.SaveChangesAsync();
+                        var error = await _userService.CreateProfileAsync(dto.ToEntity());
+                        if (error != null) throw new Exception(error);
                         return Results.Ok(new ResponseData<object>("Profile Created Successfully"));
                     }
                     else
@@ -149,6 +159,11 @@ namespace LanGeng.API.Controllers
 
         [Authorize]
         [HttpPut("profile")]
+        [EndpointSummary("Update User Profile")]
+        [EndpointDescription("Update user profile.")]
+        [ProducesResponseType<ResponseData<object>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ResponseError<object>>(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IResult> UpdateProfile([FromBody] UpdateUserProfileDto dto)
         {
             try
@@ -158,9 +173,8 @@ namespace LanGeng.API.Controllers
                 {
                     if (currentUser.Profile != null)
                     {
-                        dbContext.Entry(currentUser.Profile).CurrentValues.SetValues(dto.ToEntity());
-                        var results = await dbContext.SaveChangesAsync();
-                        return results > 0 ? Results.Ok(new ResponseData<object>("Updated Successfully")) : throw new Exception("Failed to updating profile");
+                        var results = await _userService.UpdateProfileAsync(currentUser.Username, dto.ToEntity());
+                        return results == null ? Results.Ok(new ResponseData<object>("Update Successful")) : throw new Exception("Failed to updating profile");
                     }
                     else
                     {
@@ -169,7 +183,7 @@ namespace LanGeng.API.Controllers
                 }
                 else
                 {
-                    return Results.NotFound(new ResponseData<object>("User not found"));
+                    return Results.Unauthorized();
                 }
             }
             catch (Exception e)

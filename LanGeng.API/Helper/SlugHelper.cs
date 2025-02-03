@@ -18,7 +18,7 @@ public static class SlugHelper
         var strArr = str.ToList();
         strArr[32] = '-';
         strArr[48] = '-';
-        return string.Join("", strArr);
+        return string.Join("", strArr) + DateTime.Now.Ticks;
     }
 
     private static string RandomString(int length)

@@ -3,8 +3,8 @@ using LanGeng.API.Dtos;
 using LanGeng.API.Entities;
 using LanGeng.API.Enums;
 using LanGeng.API.Helper;
+using LanGeng.API.Interfaces;
 using LanGeng.API.Mapping;
-using LanGeng.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -17,39 +17,42 @@ namespace LanGeng.API.Controllers
     public class GroupController : ControllerBase
     {
         private readonly ILogger<GroupController> _logger;
-        private readonly SocialMediaDatabaseContext dbContext;
-        private readonly TokenService _tokenService;
+        private readonly IGroupService _groupService;
+        private readonly ITokenService _tokenService;
 
-        public GroupController(ILogger<GroupController> logger, TokenService tokenService, SocialMediaDatabaseContext context)
+        public GroupController(ILogger<GroupController> logger, ITokenService tokenService, IGroupService groupService)
         {
             _logger = logger;
-            dbContext = context;
             _tokenService = tokenService;
-            dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+            _groupService = groupService;
         }
 
         [AllowAnonymous]
         [HttpGet("{Slug}")]
+        [EndpointSummary("Get a group by Slug")]
+        [EndpointDescription("Get a group by Slug, unauthorized user only return a public group.")]
+        [ProducesResponseType<ResponseData<GroupDto>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ResponseError<object>>(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType<ResponseError<object>>(StatusCodes.Status404NotFound)]
         public async Task<IResult> GetBySlug(string Slug)
         {
             try
             {
                 var currentUser = await _tokenService.GetUser(HttpContext);
+                Group? group = null;
                 if (currentUser != null)
                 {
-                    Group? group = await dbContext.Groups
-                        .IncludeAll()
-                        .Where(e => e.Slug == Slug && e.Members != null && e.Members.Any(u => u.MemberId == currentUser.Id))
-                        .FirstOrDefaultAsync();
-                    return group == null ? Results.NotFound() : Results.Ok(new ResponseData<GroupDto>("Success", group.ToDto()));
+                    group = await _groupService.GetGroupBySlugWithAllPrivacyAsync(Slug, currentUser.Username);
+                    return group == null ?
+                        Results.NotFound(new ResponseError<object>("No group found")) :
+                        Results.Ok(new ResponseData<GroupDto>("Success", group.ToDto()));
                 }
                 else
                 {
-                    Group? group = await dbContext.Groups
-                        .IncludeAll()
-                        .Where(e => e.Slug == Slug && e.PrivacyType != PrivacyTypeEnum.Private)
-                        .FirstOrDefaultAsync();
-                    return group == null ? Results.NotFound() : Results.Ok(new ResponseData<GroupDto>("Success", group.ToDto()));
+                    group = await _groupService.GetGroupBySlugWithPublicOnlyAsync(Slug);
+                    return group == null ?
+                        Results.NotFound(new ResponseError<object>("No group found")) :
+                        Results.Ok(new ResponseData<GroupDto>("Success", group.ToDto()));
                 }
             }
             catch (Exception e)
@@ -60,37 +63,22 @@ namespace LanGeng.API.Controllers
 
         [Authorize]
         [HttpPost()]
-        public async Task<IResult> Create(CreateGroupDto dto)
+        [EndpointSummary("Create New Group")]
+        [EndpointDescription("Create new Group.")]
+        [ProducesResponseType<ResponseData<GroupDto>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ResponseError<object>>(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType<ResponseError<object>>(StatusCodes.Status401Unauthorized)]
+        public async Task<IResult> Create([FromBody] CreateGroupDto dto)
         {
             try
             {
                 var currentUser = await _tokenService.GetUser(HttpContext);
                 if (currentUser != null)
                 {
-                    Group? group = null;
-                    int tryCount = 0;
-                    while (tryCount < 16)
-                    {
-                        group = dto.ToEntity(currentUser.Id);
-                        var groups = await dbContext.Groups.Where(e => e.Slug == group.Slug).AsTracking().ToListAsync();
-                        tryCount++;
-                        if (groups == null || groups.Count <= 0) break;
-                        else group = null;
-                    }
-                    if (group != null) dbContext.Groups.Add(group);
-                    else throw new Exception("Failed to create group, try again later.");
-                    await dbContext.SaveChangesAsync();
-                    GroupMember member = new()
-                    {
-                        Slug = SlugHelper.Create($"{group.Name}-{currentUser.Username}"),
-                        Status = GroupMemberStatusEnum.Approved,
-                        GroupId = group.Id,
-                        MemberId = currentUser.Id,
-                        JoinedAt = DateTime.Now,
-                    };
-                    dbContext.GroupMembers.Add(member);
-                    await dbContext.SaveChangesAsync();
-                    return Results.Ok(new ResponseData<UserPostDto>("Group Created Successfully"));
+                    var error = await _groupService.CreateGroupAsync(dto.ToEntity(currentUser.Id));
+                    return string.IsNullOrEmpty(error) ?
+                        Results.Ok(new ResponseData<GroupDto>("Group Created Successfully")) :
+                        throw new Exception(error);
                 }
                 else
                 {
@@ -105,6 +93,11 @@ namespace LanGeng.API.Controllers
 
         [Authorize]
         [HttpDelete("{Slug}")]
+        [EndpointSummary("Delete a Group")]
+        [EndpointDescription("Delete a Group.")]
+        [ProducesResponseType<ResponseData<object>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ResponseError<object>>(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType<ResponseError<object>>(StatusCodes.Status401Unauthorized)]
         public async Task<IResult> Delete(string Slug)
         {
             try
@@ -113,20 +106,10 @@ namespace LanGeng.API.Controllers
                 var currentUser = await _tokenService.GetUser(HttpContext);
                 if (currentUser != null)
                 {
-                    var group = await dbContext.Groups
-                        .Where(e => e.Slug == Slug && e.CreatorId == currentUser.Id)
-                        .AsTracking().FirstOrDefaultAsync()
-                        ?? throw new Exception("Deletion Failed");
-                    dbContext.Entry(group).CurrentValues.SetValues(new { DeletedAt });
-                    var posts = await dbContext.UserPosts
-                        .Where(e => e.GroupId != null && e.GroupId == group.Id)
-                        .AsTracking().ToListAsync() ?? [];
-                    foreach (var post in posts)
-                    {
-                        dbContext.Entry(post).CurrentValues.SetValues(new { DeletedAt });
-                    }
-                    await dbContext.SaveChangesAsync();
-                    return Results.Ok(new ResponseData<UserPostDto>("Deleted Successfully"));
+                    var error = await _groupService.DeleteGroupAsync(Slug, currentUser, DeletedAt);
+                    return string.IsNullOrEmpty(error) ?
+                        Results.Ok(new ResponseData<object>("Delete Successful")) :
+                        throw new Exception(error);
                 }
                 else
                 {
@@ -141,6 +124,11 @@ namespace LanGeng.API.Controllers
 
         [Authorize]
         [HttpPost("join/{Slug}")]
+        [EndpointSummary("Join Group")]
+        [EndpointDescription("request to join a group.")]
+        [ProducesResponseType<ResponseData<GroupDto>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ResponseError<object>>(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType<ResponseError<object>>(StatusCodes.Status401Unauthorized)]
         public async Task<IResult> RequestJoin(string Slug)
         {
             try
@@ -148,19 +136,8 @@ namespace LanGeng.API.Controllers
                 var currentUser = await _tokenService.GetUser(HttpContext);
                 if (currentUser != null)
                 {
-                    var group = await dbContext.Groups.Where(e => e.Slug == Slug && e.PrivacyType != PrivacyTypeEnum.Private).FirstOrDefaultAsync() ?? throw new Exception("Can't join to this group");
-                    var member = await dbContext.GroupMembers.Where(e => e.GroupId == group.Id && e.MemberId == currentUser.Id).FirstOrDefaultAsync();
-                    if (member != null) throw new Exception("You have already requested or joined to this group");
-                    member = new()
-                    {
-                        Slug = SlugHelper.Create($"{group.Name}-{currentUser.Username}"),
-                        Status = GroupMemberStatusEnum.Request,
-                        MemberId = currentUser.Id,
-                        GroupId = group.Id,
-                    };
-                    dbContext.GroupMembers.Add(member);
-                    await dbContext.SaveChangesAsync();
-                    return Results.Ok(new ResponseData<UserPostDto>("Requested Successfully"));
+                    var error = await _groupService.JoinGroupAsync(Slug, currentUser);
+                    return Results.Ok(new ResponseData<object>("Request Successful"));
                 }
                 else
                 {
@@ -175,6 +152,11 @@ namespace LanGeng.API.Controllers
 
         [Authorize]
         [HttpPatch("join/{Slug}")]
+        [EndpointSummary("Update Member Status")]
+        [EndpointDescription("Update member status.")]
+        [ProducesResponseType<ResponseData<GroupDto>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ResponseError<object>>(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType<ResponseError<object>>(StatusCodes.Status401Unauthorized)]
         public async Task<IResult> UpdateMemberStatus(string Slug, [FromBody] UpdateGroupMemberStatusDto dto)
         {
             try
@@ -182,24 +164,8 @@ namespace LanGeng.API.Controllers
                 var currentUser = await _tokenService.GetUser(HttpContext);
                 if (currentUser != null)
                 {
-                    var group = await dbContext.Groups
-                        .IncludeAll().Where(e => e.Slug == Slug)
-                        .FirstOrDefaultAsync() ?? throw new Exception("Group not found");
-                    if (group.CreatorId != currentUser.Id &&
-                        dto.Status != GroupMemberStatusEnum.Left &&
-                        dto.Status != GroupMemberStatusEnum.Request)
-                        throw new Exception("You are not an admin");
-                    var member = await dbContext.GroupMembers
-                        .Where(e => e.MemberId == dto.MemberId && e.Status == GroupMemberStatusEnum.Request)
-                        .FirstOrDefaultAsync() ?? throw new Exception("Member request not available");
-                    dbContext.Entry(member).CurrentValues.SetValues(new
-                    {
-                        Status = dto.Status,
-                        UpdatedAt = DateTime.Now,
-                        JoinedAt = dto.Status == GroupMemberStatusEnum.Approved ? DateTime.Now : member.JoinedAt,
-                    });
-                    await dbContext.SaveChangesAsync();
-                    return Results.Ok(new ResponseData<object>("Updated Successfully"));
+                    var error = await _groupService.UpdateMemberStatusAsync(Slug, currentUser.Id, dto.MemberId, dto.Status);
+                    return Results.Ok(new ResponseData<object>("Update Successful"));
                 }
                 else
                 {

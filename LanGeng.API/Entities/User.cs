@@ -24,6 +24,7 @@ public class User
     public UserProfile? Profile { get; set; }
     public UserStatus? AccountStatus { get; set; }
     public ICollection<UserToken> UserTokens { get; set; } = [];
+    public ICollection<UserVerificationToken> VerificationTokens { get; set; } = [];
 
     public DateTime? DeletedAt { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.Now;

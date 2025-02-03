@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Reflection;
 using System.Text;
 using LanGeng.API.Data;
+using LanGeng.API.Interfaces;
 using LanGeng.API.Middlewares;
 using LanGeng.API.Seeders;
 using LanGeng.API.Services;
@@ -64,8 +65,9 @@ public class Program
                         .SetIsOriginAllowed(origin => true);
                 });
             });
-        builder.Services.AddSingleton<TokenService>();
-        builder.Services.AddTransient<EmailService>();
+        builder.Services.AddSingleton<ITokenService, TokenService>();
+        builder.Services.AddTransient<IUserService, UserService>();
+        builder.Services.AddTransient<IEmailService, EmailService>();
         builder.Services.AddAuthorization();
         builder.Services
             .AddControllers()

@@ -10,7 +10,7 @@ public record class GroupDto
     byte PrivacyType,
     string? ProfileImage,
     string? Description,
-    User Creator,
+    ResponseUserDto Creator,
     int MemberCount,
     string CreateAt
 );

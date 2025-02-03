@@ -35,6 +35,7 @@ namespace LanGeng.API.Migrations
                     Username = table.Column<string>(type: "nvarchar(64)", maxLength: 64, nullable: false),
                     Email = table.Column<string>(type: "nvarchar(128)", maxLength: 128, nullable: false),
                     PasswordHash = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
@@ -55,6 +56,7 @@ namespace LanGeng.API.Migrations
                     ProfileImage = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     CreatorId = table.Column<int>(type: "int", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
@@ -252,9 +254,9 @@ namespace LanGeng.API.Migrations
                     Slug = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
                     CommentAvailability = table.Column<bool>(type: "bit", nullable: false),
                     Content = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Media = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     AuthorId = table.Column<int>(type: "int", nullable: false),
                     GroupId = table.Column<int>(type: "int", nullable: true),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
@@ -284,6 +286,7 @@ namespace LanGeng.API.Migrations
                     UserId = table.Column<int>(type: "int", nullable: false),
                     PostId = table.Column<int>(type: "int", nullable: false),
                     ReplyId = table.Column<int>(type: "int", nullable: true),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
@@ -327,6 +330,28 @@ namespace LanGeng.API.Migrations
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_PostHashtags_UserPosts_PostId",
+                        column: x => x.PostId,
+                        principalTable: "UserPosts",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "PostMedia",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Path = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    MediaType = table.Column<byte>(type: "tinyint", nullable: false),
+                    PostId = table.Column<int>(type: "int", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PostMedia", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_PostMedia_UserPosts_PostId",
                         column: x => x.PostId,
                         principalTable: "UserPosts",
                         principalColumn: "Id",
@@ -486,6 +511,11 @@ namespace LanGeng.API.Migrations
                 column: "HashtagId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_PostMedia_PostId",
+                table: "PostMedia",
+                column: "PostId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_PostReactions_PostId",
                 table: "PostReactions",
                 column: "PostId");
@@ -609,6 +639,9 @@ namespace LanGeng.API.Migrations
 
             migrationBuilder.DropTable(
                 name: "PostHashtags");
+
+            migrationBuilder.DropTable(
+                name: "PostMedia");
 
             migrationBuilder.DropTable(
                 name: "PostReactions");

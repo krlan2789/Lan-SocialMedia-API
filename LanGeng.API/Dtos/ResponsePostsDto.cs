@@ -2,8 +2,8 @@ namespace LanGeng.API.Dtos;
 
 public record class ResponsePostsDto
 (
-    int Page,
-    int Limit,
-    int Total,
+    short Page,
+    byte Limit,
+    long Total,
     IEnumerable<UserPostDto> Posts
 );

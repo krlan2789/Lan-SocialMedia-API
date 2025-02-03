@@ -16,6 +16,12 @@ public static class UserSeeder
             // Create Users
             var emails = new HashSet<string>();
             var usernames = new HashSet<string>();
+            emails.Add("bella@lavendery.com");
+            emails.Add("berliana@redbell.com");
+            emails.Add("eden@garden.com");
+            usernames.Add("bella");
+            usernames.Add("berliana");
+            usernames.Add("eden");
             while (emails.Count < 128)
             {
                 var email = Faker.Internet.Email();
