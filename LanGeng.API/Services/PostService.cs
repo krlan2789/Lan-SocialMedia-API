@@ -25,30 +25,40 @@ public class PostService : IPostService
     {
         try
         {
+            Keyword = Keyword?.Trim().ToLower();
+            Author = Author?.Trim().ToLower();
+            Group = Group?.Trim().ToLower();
+
             byte defaultLimit = 16;
-            Keyword = $"%{Keyword}%".ToLower();
-            Author = $"%{Author}%".ToLower();
-            Group = $"%{Group}%".ToLower();
-            var query = dbContext.UserPosts
-                .IncludeAll()
-                .Where(e =>
-                    (Tags == null || e.Hashtags.Any(t => Tags.Contains(t.Tag))) &&
-                    (string.IsNullOrEmpty(Author) || EF.Functions.Like(e.Author!.Username.ToLower(), Author) || EF.Functions.Like(e.Author!.Fullname.ToLower(), Author)) &&
-                    (string.IsNullOrEmpty(Group) || (e.Group != null && (EF.Functions.Like(e.Group.Slug.ToLower(), Group) || EF.Functions.Like(e.Group.Name.ToLower(), Group)))) &&
-                    (
-                        string.IsNullOrEmpty(Keyword) || EF.Functions.Like(("" + e.Content).ToLower(), Keyword) ||
-                        e.Author == null || EF.Functions.Like(e.Author.Username.ToLower(), Keyword) || EF.Functions.Like(e.Author.Fullname.ToLower(), Keyword) ||
-                        e.Group == null || EF.Functions.Like(e.Group.Slug.ToLower(), Keyword) || EF.Functions.Like(e.Group.Name.ToLower(), Keyword)
-                    )
-                );
+            var query = dbContext.UserPosts.IncludeAll();
+
+            if (!string.IsNullOrWhiteSpace(Keyword))
+            {
+                query = query.Where(e => e.Content != null && e.Content.ToLower().Contains(Keyword));
+            }
+            if (!string.IsNullOrWhiteSpace(Author))
+            {
+                query = query.Where(e => e.Author != null && (e.Author.Username != null && e.Author.Username.ToLower().Contains(Author) || e.Author.Fullname != null && e.Author.Fullname.ToLower().Contains(Author)));
+            }
+            if (!string.IsNullOrWhiteSpace(Group))
+            {
+                query = query.Where(e => e.Group != null && (e.Group.Slug != null && e.Group.Slug.ToLower().Contains(Group) || e.Group.Name != null && e.Group.Name.ToLower().Contains(Group)));
+            }
+            if (Tags != null && Tags.Length > 0)
+            {
+                query = query.Where(e => e.Hashtags.Any(t => Tags.Contains(t.Tag)));
+            }
+
             long totalPosts = await query.CountAsync();
             byte limit = Limit ?? defaultLimit;
             var start = ((Page > 0 ? Page : 1) - 1) * limit;
             var posts = await query
+                .OrderByDescending(p => p.UpdatedAt)
                 .Skip(start)
                 .Take(limit)
-                .OrderByDescending(p => p.UpdatedAt)
+                .AsSplitQuery()
                 .ToListAsync();
+            // _logger.LogInformation($"Get posts: {posts.Count}, Total: {totalPosts}, Page: {Page}, Limit: {limit}, Start: {start}, TotalRecords: {totalRecords}, Keyword: {Keyword}, Author: {Author}, Group: {Group}, Tags: {Tags?.Length}.");
             return (posts, totalPosts, Page, limit);
         }
         catch (Exception e)
@@ -98,6 +108,7 @@ public class PostService : IPostService
                 .IncludeAll()
                 .Where(e => e.GroupId != null && e.GroupId == groupId && (memberId == null || e.AuthorId == memberId))
                 .AsTracking()
+                .AsSplitQuery()
                 .ToListAsync();
         }
         catch (Exception e)
@@ -115,6 +126,7 @@ public class PostService : IPostService
                 .IncludeAll()
                 .Where(e => e.AuthorId == authorId)
                 .AsTracking()
+                .AsSplitQuery()
                 .ToListAsync();
         }
         catch (Exception e)

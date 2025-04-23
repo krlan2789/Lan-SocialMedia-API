@@ -49,6 +49,7 @@ public static class UserMapping
             .Include(up => up.Group)
             .Include(up => up.Reactions)
             .Include(up => up.Comments)
-            .Include(up => up.Hashtags);
+            .Include(up => up.Hashtags)
+            .AsSplitQuery();
     }
 }

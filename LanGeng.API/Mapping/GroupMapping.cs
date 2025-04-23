@@ -38,6 +38,6 @@ public static class GroupMapping
 
     public static IQueryable<Group> IncludeAll(this DbSet<Group> group)
     {
-        return group.Include(g => g.Creator).Include(g => g.Members);
+        return group.Include(g => g.Creator).Include(g => g.Members).AsSplitQuery();
     }
 }

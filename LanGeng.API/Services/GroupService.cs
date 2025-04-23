@@ -24,23 +24,32 @@ public class GroupService : IGroupService
     {
         try
         {
-            var keyword = $"%{Keyword}%".ToLower();
+            Keyword = Keyword?.Trim();
+            Username = Username?.Trim();
+
             var limit = Limit ?? 16;
-            var query = dbContext.Groups
-                .IncludeAll()
-                .Where(e =>
-                    (string.IsNullOrEmpty(Username) || (e.Creator != null && e.Creator.Username == Username)) &&
-                    (string.IsNullOrEmpty(Username) || (e.Members != null && e.Members.Any(u => u.Member!.Username == Username))) &&
-                    (string.IsNullOrEmpty(Keyword) ||
-                        (string.IsNullOrEmpty(e.Name) || EF.Functions.Like(e.Name, keyword)) &&
-                        (string.IsNullOrEmpty(e.Description) || EF.Functions.Like(e.Description, keyword))
-                    )
-                );
+            var query = dbContext.Groups.IncludeAll();
+
+            if (!string.IsNullOrWhiteSpace(Username))
+            {
+                query = query.Where(e =>
+                    (e.Creator != null && e.Creator.Username != null && e.Creator.Username.ToLower().Contains(Username)) ||
+                    (e.Members != null && e.Members.Any(u => u.Member!.Username != null && u.Member.Username.ToLower().Contains(Username))));
+            }
+            if (!string.IsNullOrWhiteSpace(Keyword))
+            {
+                query = query.Where(e =>
+                    (e.Name != null && e.Name.ToLower().Contains(Keyword)) ||
+                    (e.Description != null && e.Description.ToLower().Contains(Keyword)));
+            }
+
             long totalGroups = query.Count();
             var start = ((Page > 0 ? Page : 1) - 1) * limit;
             var groups = await query
+                .OrderBy(e => e.PrivacyType)
                 .Skip(start)
                 .Take(limit)
+                .AsSplitQuery()
                 .ToListAsync();
             return groups != null ? (groups, totalGroups, Page, limit) : null;
         }

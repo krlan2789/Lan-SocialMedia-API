@@ -56,14 +56,15 @@ namespace LanGeng.API.Controllers
         {
             try
             {
-                var tags = ("" + filters.Tags).ToLower().Replace("#", "").Split(",");
+                var allTags = ("" + filters.Tags).ToLower();
+                var tags = allTags.Contains(',') ? allTags.Replace("#", "").Split(",") : null;
                 var result = await _postService.GetPostsAsync(
                     filters.Keyword, filters.Author, filters.Group, tags, filters.Page, filters.Limit
                 );
                 if (result == null) throw new Exception("No posts found");
                 var (posts, totalPosts, page, limit) = result.Value;
                 var postsDto = posts.Select(e => e.ToDto()).ToList();
-                return postsDto != null ?
+                return postsDto != null && postsDto.Count > 0 ?
                     Results.Ok(new ResponseData<ResponsePostsDto>(
                         "Success",
                         new ResponsePostsDto(page, limit, totalPosts, postsDto)
