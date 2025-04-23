@@ -27,30 +27,30 @@ public class Program
             .AddEnvironmentVariables();
 
         // Define connection strings
-        var sqlServerConnection = builder.Configuration.GetConnectionString("DefaultConnection");
         var sqliteConnection = builder.Configuration.GetConnectionString("LanGeng_Prod");
         if (builder.Environment.IsDevelopment()) sqliteConnection = builder.Configuration.GetConnectionString("LanGeng");
+        // var sqlServerConnection = builder.Configuration.GetConnectionString("DefaultConnection");
 
-        // Attempt SQL Server connection
-        bool isSqlServerAvailable = false;
-        try
-        {
-            using var connection = new SqlConnection(sqlServerConnection);
-            connection.Open();
-            isSqlServerAvailable = true;
-            Console.WriteLine("✅ SQL Server is available, using SQL Server.");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"⚠ SQL Server not available, switching to SQLite: {ex.Message}");
-        }
+        // // Attempt SQL Server connection
+        // bool isSqlServerAvailable = false;
+        // try
+        // {
+        //     using var connection = new SqlConnection(sqlServerConnection);
+        //     connection.Open();
+        //     isSqlServerAvailable = true;
+        //     Console.WriteLine("✅ SQL Server is available, using SQL Server.");
+        // }
+        // catch (Exception ex)
+        // {
+        //     Console.WriteLine($"⚠ SQL Server not available, switching to SQLite: {ex.Message}");
+        // }
 
-        // Add Database Context services to the container based on availability
-        if (isSqlServerAvailable)
-        {
-            builder.Services.AddDbContext<SocialMediaDatabaseContext>(options => options.UseSqlServer(sqlServerConnection));
-        }
-        else
+        // // Add Database Context services to the container based on availability
+        // if (isSqlServerAvailable)
+        // {
+        //     builder.Services.AddDbContext<SocialMediaDatabaseContext>(options => options.UseSqlServer(sqlServerConnection));
+        // }
+        // else
         {
             builder.Services.AddDbContext<SocialMediaDatabaseContext>(options => options.UseSqlite(sqliteConnection));
         }
