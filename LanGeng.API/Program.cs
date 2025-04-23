@@ -1,5 +1,3 @@
-using System.ComponentModel;
-using System.Reflection;
 using System.Text;
 using LanGeng.API.Data;
 using LanGeng.API.Interfaces;
@@ -9,6 +7,7 @@ using LanGeng.API.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
@@ -27,12 +26,35 @@ public class Program
             .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
             .AddEnvironmentVariables();
 
-        // Add Database Context services to the container
-        builder.Services
-            .AddDbContext<SocialMediaDatabaseContext>(option =>
-            {
-                option.UseSqlServer("" + builder.Configuration.GetConnectionString("DefaultConnection"));
-            });
+        // Define connection strings
+        var sqlServerConnection = builder.Configuration.GetConnectionString("DefaultConnection");
+        var sqliteConnection = builder.Configuration.GetConnectionString("LanGeng_Prod");
+        if (builder.Environment.IsDevelopment()) sqliteConnection = builder.Configuration.GetConnectionString("LanGeng");
+
+        // Attempt SQL Server connection
+        bool isSqlServerAvailable = false;
+        try
+        {
+            using var connection = new SqlConnection(sqlServerConnection);
+            connection.Open();
+            isSqlServerAvailable = true;
+            Console.WriteLine("✅ SQL Server is available, using SQL Server.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"⚠ SQL Server not available, switching to SQLite: {ex.Message}");
+        }
+
+        // Add Database Context services to the container based on availability
+        if (isSqlServerAvailable)
+        {
+            builder.Services.AddDbContext<SocialMediaDatabaseContext>(options => options.UseSqlServer(sqlServerConnection));
+        }
+        else
+        {
+            builder.Services.AddDbContext<SocialMediaDatabaseContext>(options => options.UseSqlite(sqliteConnection));
+        }
+
         // Add services to the container.
         builder.Services
             .AddAuthentication(options =>
@@ -66,8 +88,10 @@ public class Program
                 });
             });
         builder.Services.AddSingleton<ITokenService, TokenService>();
-        builder.Services.AddTransient<IUserService, UserService>();
         builder.Services.AddTransient<IEmailService, EmailService>();
+        builder.Services.AddScoped<IUserService, UserService>();
+        builder.Services.AddScoped<IPostService, PostService>();
+        builder.Services.AddScoped<IGroupService, GroupService>();
         builder.Services.AddAuthorization();
         builder.Services
             .AddControllers()
@@ -90,30 +114,29 @@ public class Program
 
         var app = builder.Build();
 
-        // Migrate the database
-        if (app.Environment.IsDevelopment())
+        // if (app.Environment.IsDevelopment())
+        // {
+        // }
+        // Register the endpoint for viewing the OpenAPI Documentation
+        string openApiRoute = "/api/docs/{documentName}.json";
+        app.MapOpenApi(openApiRoute);
+        app.MapScalarApiReference(options =>
         {
-            // Register the endpoint for viewing the OpenAPI Documentation
-            string openApiRoute = "/api/docs/{documentName}.json";
-            app.MapOpenApi(openApiRoute);
-            app.MapScalarApiReference(options =>
+            string scalarApiRoute = "/api/docs/{documentName}";
+            options
+                .WithTheme(ScalarTheme.BluePlanet)
+                .WithEndpointPrefix(scalarApiRoute)
+                .WithOpenApiRoutePattern(openApiRoute)
+                .WithTitle((builder.Configuration["AppName"] ?? "LanGeng") + " - REST API");
+            foreach (var description in app.Services.GetRequiredService<IApiVersionDescriptionProvider>().ApiVersionDescriptions)
             {
-                string scalarApiRoute = "/api/docs/{documentName}";
-                options
-                    .WithTheme(ScalarTheme.BluePlanet)
-                    .WithEndpointPrefix(scalarApiRoute)
-                    .WithOpenApiRoutePattern(openApiRoute)
-                    .WithTitle((builder.Configuration["AppName"] ?? "LanGeng") + " - REST API");
-                foreach (var description in app.Services.GetRequiredService<IApiVersionDescriptionProvider>().ApiVersionDescriptions)
-                {
-                    options.WithOpenApiRoutePattern(openApiRoute.Replace("{documentName}", description.GroupName));
-                }
-            });
-
-            using var scope = app.Services.CreateScope();
-            var services = scope.ServiceProvider;
-            await DatabaseSeeder.Seed(services);
-        }
+                options.WithOpenApiRoutePattern(openApiRoute.Replace("{documentName}", description.GroupName));
+            }
+        });
+        // Migrate the database
+        using var scope = app.Services.CreateScope();
+        var services = scope.ServiceProvider;
+        await DatabaseSeeder.Seed(services);
 
         // Configure the HTTP request pipeline
         app.UseCors();
