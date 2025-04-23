@@ -18,6 +18,7 @@ public class AuthControllerTest
     private readonly Mock<ILogger<AuthController>> _loggerMock;
     private readonly Mock<ITokenService> _tokenServiceMock;
     private readonly Mock<IEmailService> _emailServiceMock;
+    private readonly Mock<IUserService> _userServiceMock;
     private readonly SocialMediaDatabaseContext dbContext;
     private readonly AuthController _controller;
 
@@ -26,11 +27,12 @@ public class AuthControllerTest
         _loggerMock = new Mock<ILogger<AuthController>>();
         _tokenServiceMock = new Mock<ITokenService>();
         _emailServiceMock = new Mock<IEmailService>();
+        _userServiceMock = new Mock<IUserService>();
         var options = new DbContextOptionsBuilder<SocialMediaDatabaseContext>()
             .UseInMemoryDatabase(databaseName: "TestDatabase")
             .Options;
         dbContext = new SocialMediaDatabaseContext(options);
-        _controller = new AuthController(_loggerMock.Object, _tokenServiceMock.Object, _emailServiceMock.Object, dbContext);
+        _controller = new AuthController(_loggerMock.Object, _tokenServiceMock.Object, _emailServiceMock.Object, _userServiceMock.Object);
     }
 
     [Fact]
