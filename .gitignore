@@ -396,3 +396,8 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+LanGeng.db
+LanGeng.db-*
+**/LanGeng.db
+**/LanGeng.db-*
