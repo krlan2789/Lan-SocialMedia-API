@@ -31,7 +31,7 @@ jobs:
 
     # Publish the project
     - name: Publish the project
-      run: dotnet publish Lan-SocialMedia-API/LanGeng.API.csproj --configuration Release --output ./publish
+      run: dotnet publish Lan-SocialMedia-API/Lan-SocialMedia.API.csproj --configuration Release --output ./publish
 
     # Deploy to Azure App Service
     - name: Deploy to Azure Web App
